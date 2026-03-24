@@ -1,0 +1,24 @@
+FediSuite is a mobile client for the FediSuite Fediverse management platform.
+
+The app lets you connect to the official hosted FediSuite instance at app.fedisuite.com or to your own self-hosted FediSuite instance.
+
+With the Android app you can:
+
+- connect to a specific FediSuite instance of your choice
+- log in securely with instance-scoped sessions
+- view your mobile dashboard and account summaries
+- inspect account analytics and insights
+- manage your queue of scheduled, published, failed and draft posts
+- create new posts, schedule them or publish them immediately
+- manage connected Fediverse accounts
+- adjust language, theme, timezone and default account settings
+
+The app is designed as a real mobile experience:
+
+- touch-first navigation
+- bottom tabs
+- compact dashboard cards
+- dark-mode-first UI
+- explicit loading, error and empty states
+
+FediSuite supports the idea of one central management hub for multiple Fediverse services and accounts while still keeping the app instance-based instead of locking users into one hardcoded backend.
