@@ -264,7 +264,7 @@ cd android
 
 ## Versioning
 
-The app reads `APP_VERSION` from `.env`.
+The app reads its version from the plain-text file `version`.
 
 That version is used for:
 

@@ -171,7 +171,7 @@ adb logcat -d | rg "org.fedisuite.mobile|AndroidRuntime|ReactNativeJS|FATAL EXCE
 
 ## Versioning
 
-The app version is currently read from `APP_VERSION` in `.env`.
+The app version is currently read from the plain-text file `version`.
 
 That version is used for:
 

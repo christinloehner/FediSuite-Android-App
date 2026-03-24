@@ -1,39 +1,17 @@
 const fs = require('fs');
 const path = require('path');
 
-function readEnvValue(key, fallback) {
-  const envPath = path.join(__dirname, '.env');
+function readVersionFile(fallback) {
+  const versionPath = path.join(__dirname, 'version');
 
-  if (!fs.existsSync(envPath)) {
+  if (!fs.existsSync(versionPath)) {
     return fallback;
   }
 
-  const lines = fs.readFileSync(envPath, 'utf8').split(/\r?\n/);
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) {
-      continue;
-    }
-
-    const separatorIndex = trimmed.indexOf('=');
-    if (separatorIndex === -1) {
-      continue;
-    }
-
-    const envKey = trimmed.slice(0, separatorIndex).trim();
-    if (envKey !== key) {
-      continue;
-    }
-
-    const rawValue = trimmed.slice(separatorIndex + 1).trim();
-    return rawValue.replace(/^['"]|['"]$/g, '') || fallback;
-  }
-
-  return fallback;
+  return fs.readFileSync(versionPath, 'utf8').trim() || fallback;
 }
 
-const appVersion = readEnvValue('APP_VERSION', '1.0.0');
+const appVersion = readVersionFile('1.0.0');
 
 module.exports = {
   expo: {
