@@ -14,9 +14,12 @@ import { Card } from '../../components/Card';
 import { Chip } from '../../components/Chip';
 import { EmptyState } from '../../components/EmptyState';
 import { ErrorStateView } from '../../components/ErrorStateView';
+import { HeatmapGrid } from '../../components/HeatmapGrid';
+import { HorizontalBarList } from '../../components/HorizontalBarList';
 import { LoadingView } from '../../components/LoadingView';
 import { MetricCard } from '../../components/MetricCard';
 import { Screen } from '../../components/Screen';
+import { SimpleBarChart } from '../../components/SimpleBarChart';
 import { useAccountDashboard } from '../../hooks/useAccountDashboard';
 import { useAuthRecovery } from '../../hooks/useAuthRecovery';
 import { useBootstrap } from '../../hooks/useBootstrap';
@@ -66,6 +69,28 @@ function asString(value: unknown) {
 function weekdayLabel(day: number) {
   const labels = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
   return labels[day] ?? `Tag ${day}`;
+}
+
+function shortDateLabel(value: string | undefined) {
+  if (!value) {
+    return 'n/a';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return `${date.getDate()}.${date.getMonth() + 1}.`;
+}
+
+function asArray<T>(value: T[] | undefined | null) {
+  return Array.isArray(value) ? value : [];
+}
+
+function compactNumber(value: number | undefined) {
+  const numeric = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  return Number.isInteger(numeric) ? `${numeric}` : numeric.toFixed(1);
 }
 
 function formatInsightTitle(tip: {
@@ -237,6 +262,18 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
   }
 
   const availablePeriods = dashboardQuery.data?.period.available_periods ?? bootstrapQuery.data?.mobile_capabilities.dashboard_periods ?? fallbackPeriods;
+  const dailyStats = asArray(dashboardQuery.data?.charts.daily_stats).slice(-7);
+  const engagementRate = asArray(dashboardQuery.data?.charts.engagement_rate).slice(-7);
+  const statsHistory = asArray(dashboardQuery.data?.charts.stats_history).slice(-7);
+  const bestTimes = asArray(dashboardQuery.data?.charts.best_times);
+  const mediaPerformance = asArray(dashboardQuery.data?.charts.media_performance);
+  const weekdayEngagement = asArray(dashboardQuery.data?.charts.weekday_engagement);
+  const visibilityBreakdown = asArray(dashboardQuery.data?.charts.visibility_breakdown);
+  const topHashtags = asArray(dashboardQuery.data?.charts.top_hashtags);
+  const hashtagCombinations = asArray(dashboardQuery.data?.charts.hashtag_combinations);
+  const hashtagOverview = dashboardQuery.data?.charts.hashtag_overview;
+  const mediaRow = mediaPerformance.find((entry) => entry.type === 'media');
+  const textRow = mediaPerformance.find((entry) => entry.type === 'text');
 
   return (
     <Screen
@@ -329,19 +366,63 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
           </View>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Chart-Summary</Text>
-            <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Daily Stats: {Array.isArray(dashboardQuery.data.charts.daily_stats) ? dashboardQuery.data.charts.daily_stats.length : 0} Punkte
-            </Text>
-            <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Engagement Rate: {Array.isArray(dashboardQuery.data.charts.engagement_rate) ? dashboardQuery.data.charts.engagement_rate.length : 0} Punkte
-            </Text>
-            <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Follower-Historie: {Array.isArray(dashboardQuery.data.charts.stats_history) ? dashboardQuery.data.charts.stats_history.length : 0} Punkte
-            </Text>
-            <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Best Times: {Array.isArray(dashboardQuery.data.charts.best_times) ? dashboardQuery.data.charts.best_times.length : 0} Slots
-            </Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Posting-Aktivität</Text>
+            <SimpleBarChart
+              emptyLabel="Keine Tagesdaten vorhanden."
+              data={dailyStats.map((entry) => ({
+                label: shortDateLabel(entry.date),
+                value: entry.posts_count ?? 0,
+                detail: `${(entry.total_favourites ?? 0) + (entry.total_reblogs ?? 0) + (entry.total_replies ?? 0)} Eng.`,
+              }))}
+            />
+          </Card>
+
+          <Card>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Engagement-Verlauf</Text>
+            <SimpleBarChart
+              emptyLabel="Keine Engagement-Daten vorhanden."
+              data={engagementRate.map((entry) => ({
+                label: shortDateLabel(entry.date),
+                value: entry.engagement_rate ?? 0,
+                detail: `${entry.posts_count ?? 0} Posts`,
+              }))}
+            />
+          </Card>
+
+          <Card>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Follower-Historie</Text>
+            <SimpleBarChart
+              emptyLabel="Keine Historie vorhanden."
+              data={statsHistory.map((entry) => ({
+                label: shortDateLabel(entry.recorded_at),
+                value: entry.followers ?? 0,
+                detail: `Folgt ${entry.following ?? 0}`,
+              }))}
+            />
+          </Card>
+
+          <Card>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Beste Zeiten</Text>
+            <HeatmapGrid
+              emptyLabel="Keine Heatmap-Daten vorhanden."
+              data={bestTimes.map((entry) => ({
+                day: entry.day_of_week ?? 0,
+                hour: entry.hour ?? 0,
+                value: entry.avg_engagement ?? 0,
+              }))}
+            />
+          </Card>
+
+          <Card>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Wochentage</Text>
+            <HorizontalBarList
+              emptyLabel="Keine Wochentagsdaten vorhanden."
+              data={weekdayEngagement.map((entry) => ({
+                label: weekdayLabel(entry.day_of_week ?? -1),
+                value: entry.avg_engagement ?? 0,
+                meta: `${entry.post_count ?? 0} Posts`,
+              }))}
+            />
           </Card>
 
           <Card>
@@ -366,20 +447,55 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
 
           <Card>
             <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Medien vs. Text</Text>
+            <View style={styles.grid}>
+              <MetricCard label="Medien-Posts" value={mediaRow?.post_count ?? 0} tone="accent" />
+              <MetricCard label="Text-Posts" value={textRow?.post_count ?? 0} />
+              <MetricCard label="Ø Medien-Engagement" value={compactNumber(mediaRow?.avg_engagement)} tone="accent" />
+              <MetricCard label="Ø Text-Engagement" value={compactNumber(textRow?.avg_engagement)} />
+            </View>
             <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Media Posts: {dashboardQuery.data.charts.media_performance?.media_posts ?? 0} | Ø Engagement {dashboardQuery.data.charts.media_performance?.media_avg_engagement ?? 0}
+              Ø Favoriten: Medien {compactNumber(mediaRow?.avg_favourites)} | Text {compactNumber(textRow?.avg_favourites)}
             </Text>
             <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Text Posts: {dashboardQuery.data.charts.media_performance?.text_posts ?? 0} | Ø Engagement {dashboardQuery.data.charts.media_performance?.text_avg_engagement ?? 0}
+              Ø Boosts: Medien {compactNumber(mediaRow?.avg_boosts)} | Text {compactNumber(textRow?.avg_boosts)}
+            </Text>
+            <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
+              Ø Replies: Medien {compactNumber(mediaRow?.avg_replies)} | Text {compactNumber(textRow?.avg_replies)}
             </Text>
           </Card>
 
           <Card>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Sichtbarkeit</Text>
+            <HorizontalBarList
+              emptyLabel="Keine Sichtbarkeitsdaten vorhanden."
+              data={visibilityBreakdown.map((entry) => ({
+                label: entry.visibility ?? 'unbekannt',
+                value: entry.post_count ?? entry.count ?? 0,
+              }))}
+            />
+          </Card>
+
+          <Card>
             <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Hashtags</Text>
+            <View style={styles.grid}>
+              <MetricCard label="Posts mit Hashtags" value={hashtagOverview?.posts_with_hashtags ?? 0} tone="accent" />
+              <MetricCard label="Posts ohne Hashtags" value={hashtagOverview?.posts_without_hashtags ?? 0} />
+              <MetricCard label="Unique Hashtags" value={hashtagOverview?.unique_hashtags ?? 0} tone="accent" />
+              <MetricCard label="Hashtag Uses" value={hashtagOverview?.hashtag_uses ?? 0} />
+            </View>
             <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Unique Hashtags: {dashboardQuery.data.charts.hashtag_overview?.unique_hashtags ?? 0} | Uses: {dashboardQuery.data.charts.hashtag_overview?.hashtag_uses ?? 0}
+              Ø pro Post: {compactNumber(hashtagOverview?.avg_hashtags_per_post)} | Ø pro markiertem Post:{' '}
+              {compactNumber(hashtagOverview?.avg_hashtags_per_tagged_post)}
             </Text>
-            {(dashboardQuery.data.charts.top_hashtags ?? []).slice(0, 5).map((tag, index) => (
+            <SimpleBarChart
+              emptyLabel="Keine Hashtag-Leistungsdaten vorhanden."
+              data={topHashtags.slice(0, 5).map((tag) => ({
+                label: `#${tag.tag ?? 'unbekannt'}`,
+                value: tag.avg_engagement ?? 0,
+                detail: `${tag.posts_count ?? 0} Posts`,
+              }))}
+            />
+            {topHashtags.slice(0, 5).map((tag, index) => (
               <View key={`${tag.tag ?? index}`} style={styles.listItem}>
                 <Text style={[styles.listTitle, { color: isDark ? palette.text : palette.lightText }]}>
                   #{tag.tag ?? 'unbekannt'}
@@ -387,16 +503,24 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
                 <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
                   Posts {tag.posts_count ?? 0} | Engagement {tag.total_engagement ?? 0} | Ø {tag.avg_engagement ?? 0}
                 </Text>
+                <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
+                  Boost-Rate {compactNumber(tag.boost_rate)}% | Reply-Rate {compactNumber(tag.reply_rate)}%
+                </Text>
               </View>
             ))}
           </Card>
 
           <Card>
             <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Hashtag-Kombinationen</Text>
-            {(dashboardQuery.data.charts.hashtag_combinations ?? []).slice(0, 5).map((combo, index) => (
-              <View key={`${formatTags(combo.tags)}-${index}`} style={styles.listItem}>
+            {hashtagCombinations.length === 0 ? (
+              <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
+                Noch keine Hashtag-Kombinationen gefunden.
+              </Text>
+            ) : null}
+            {hashtagCombinations.slice(0, 5).map((combo, index) => (
+              <View key={`${combo.tag_a ?? 'tag'}-${combo.tag_b ?? 'tag'}-${index}`} style={styles.listItem}>
                 <Text style={[styles.listTitle, { color: isDark ? palette.text : palette.lightText }]}>
-                  {formatTags(combo.tags)}
+                  {combo.tag_a || combo.tag_b ? `#${combo.tag_a ?? 'unbekannt'} + #${combo.tag_b ?? 'unbekannt'}` : formatTags(combo.tags)}
                 </Text>
                 <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
                   Posts {combo.posts_count ?? 0} | Engagement {combo.total_engagement ?? 0} | Ø {combo.avg_engagement ?? 0}

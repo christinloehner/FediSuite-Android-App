@@ -87,6 +87,44 @@ export type MobilePreferencesResponse = {
   };
 };
 
+export type GlobalNotice = {
+  enabled: boolean;
+  markdown: string;
+};
+
+export type AdminUserAccount = {
+  username?: string | null;
+  instance_url?: string | null;
+  instance_type?: string | null;
+  stats_followers?: number | null;
+};
+
+export type AdminUser = {
+  id: number;
+  email: string;
+  created_at?: string | null;
+  is_verified?: boolean | null;
+  account_count?: number | null;
+  total_followers?: number | null;
+  scheduled_posts_count?: number | null;
+  accounts?: AdminUserAccount[] | null;
+};
+
+export type AdminUsersResponse = {
+  items: AdminUser[];
+  pagination: {
+    page: number;
+    page_size: number;
+    total_items: number;
+    total_pages: number;
+    has_previous_page: boolean;
+    has_next_page: boolean;
+  };
+  filters?: {
+    search?: string;
+  };
+};
+
 export type AccountDashboardResponse = {
   server_time: string;
   period: {
@@ -132,40 +170,91 @@ export type AccountDashboardResponse = {
     latest_stats_at: string | null;
   };
   charts: {
-    daily_stats?: unknown[];
-    engagement_rate?: unknown[];
-    stats_history?: unknown[];
-    weekly_growth?: unknown[];
-    follower_events?: unknown[];
-    best_times?: unknown[];
-    media_performance?: {
-      media_posts?: number;
-      text_posts?: number;
-      media_avg_engagement?: number;
-      text_avg_engagement?: number;
-      [key: string]: unknown;
+    daily_stats?: Array<{
+      date?: string;
+      posts_count?: number;
+      total_favourites?: number;
+      total_reblogs?: number;
+      total_replies?: number;
+    }>;
+    engagement_rate?: Array<{
+      date?: string;
+      posts_count?: number;
+      engagement_rate?: number;
+    }>;
+    stats_history?: Array<{
+      followers?: number;
+      following?: number;
+      statuses?: number;
+      recorded_at?: string;
+    }>;
+    weekly_growth?: Array<{
+      week?: string;
+      follower_change?: number;
+      followers_end?: number;
+    }>;
+    follower_events?: Array<{
+      date?: string;
+      followers_end?: number;
+      net_change?: number;
+    }>;
+    best_times?: Array<{
+      day_of_week?: number;
+      hour?: number;
+      avg_engagement?: number;
+      post_count?: number;
+    }>;
+    engagement_breakdown?: {
+      favourites?: number;
+      boosts?: number;
+      replies?: number;
     };
+    media_performance?: Array<{
+      type?: 'media' | 'text' | string;
+      avg_engagement?: number;
+      post_count?: number;
+      avg_favourites?: number;
+      avg_boosts?: number;
+      avg_replies?: number;
+    }>;
+    weekday_engagement?: Array<{
+      day_of_week?: number;
+      avg_engagement?: number;
+      avg_favourites?: number;
+      avg_boosts?: number;
+      avg_replies?: number;
+      post_count?: number;
+    }>;
     visibility_breakdown?: Array<{
       visibility?: string;
       count?: number;
-      posts_count?: number;
+      post_count?: number;
       total_engagement?: number;
     }>;
     hashtag_overview?: {
+      posts_total?: number;
       total_posts?: number;
       posts_with_hashtags?: number;
       posts_without_hashtags?: number;
       hashtag_uses?: number;
       unique_hashtags?: number;
       avg_hashtags_per_post?: number;
+      avg_hashtags_per_tagged_post?: number;
     };
     top_hashtags?: Array<{
       tag?: string;
       posts_count?: number;
+      total_favourites?: number;
+      total_boosts?: number;
+      total_replies?: number;
       total_engagement?: number;
       avg_engagement?: number;
+      boost_rate?: number;
+      reply_rate?: number;
     }>;
     hashtag_combinations?: Array<{
+      tag_a?: string;
+      tag_b?: string;
       tags?: string[] | string;
       posts_count?: number;
       total_engagement?: number;

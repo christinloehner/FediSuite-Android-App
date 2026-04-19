@@ -11,12 +11,14 @@ export type UpdatePostInput = {
 };
 
 export async function fetchPosts(baseUrl: string, token: string, language: string) {
-  return apiRequest<QueuePost[]>({
+  const payload = await apiRequest<QueuePost[] | { posts?: QueuePost[]; data?: QueuePost[]; items?: QueuePost[] }>({
     baseUrl,
     path: '/api/posts',
     token,
     language,
   });
+
+  return normalizePostsPayload(payload);
 }
 
 export async function deletePost(baseUrl: string, token: string, language: string, postId: number) {
@@ -77,4 +79,26 @@ export async function updatePost(
     language,
     body: JSON.stringify(input),
   });
+}
+
+function normalizePostsPayload(payload: QueuePost[] | { posts?: QueuePost[]; data?: QueuePost[]; items?: QueuePost[] }) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+
+  if (payload && typeof payload === 'object') {
+    if (Array.isArray(payload.posts)) {
+      return payload.posts;
+    }
+
+    if (Array.isArray(payload.data)) {
+      return payload.data;
+    }
+
+    if (Array.isArray(payload.items)) {
+      return payload.items;
+    }
+  }
+
+  return [];
 }

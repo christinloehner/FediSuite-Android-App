@@ -115,7 +115,7 @@ export function QueueScreen() {
     );
   }
 
-  const allPosts = postsQuery.data ?? [];
+  const allPosts = Array.isArray(postsQuery.data) ? postsQuery.data : [];
   const filteredPosts = allPosts.filter((post) => getPostStatus(post) === activeFilter);
   const counts = getCounts(allPosts);
 
