@@ -1,13 +1,15 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Button } from '../../components/Button';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
 import { TextField } from '../../components/TextField';
+import { useIsDark } from '../../hooks/useIsDark';
+import { useI18n } from '../../i18n';
 import { useInstanceStore } from '../../store/instanceStore';
 import { palette } from '../../theme/colors';
 import { radius, spacing } from '../../theme';
@@ -17,7 +19,8 @@ import type { AuthStackParamList } from '../../navigation/types';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Instance'>;
 
 export function InstanceScreen({ navigation }: Props) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
+  const { t } = useI18n('instance');
   const [input, setInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recentInstances = useInstanceStore((state) => state.recentInstanceUrls);
@@ -36,7 +39,7 @@ export function InstanceScreen({ navigation }: Props) {
       navigation.replace('Login');
     },
     onError: () => {
-      setError('Die Instanz konnte nicht validiert werden.');
+      setError(t('validationError'));
     },
   });
 
@@ -60,13 +63,13 @@ export function InstanceScreen({ navigation }: Props) {
   return (
     <Screen
       scrollable
-      footer={<Button label="Instanz prüfen" onPress={handleContinue} loading={validationMutation.isPending} />}
+      footer={<Button label={t('continueButton')} onPress={handleContinue} loading={validationMutation.isPending} />}
     >
       <View style={styles.hero}>
-        <Text style={[styles.eyebrow, { color: isDark ? palette.accent : palette.accentStrong }]}>FediSuite</Text>
-        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>Instanz zuerst, Login danach.</Text>
+        <Text style={[styles.eyebrow, { color: isDark ? palette.accent : palette.accentStrong }]}>{t('eyebrow')}</Text>
+        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>{t('title')}</Text>
         <Text style={[styles.subtitle, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-          Verbinde die App mit einer FediSuite-Instanz deiner Wahl, zum Beispiel mit `app.fedisuite.com` oder mit deiner eigenen gehosteten Instanz.
+          {t('subtitle')}
         </Text>
       </View>
 
@@ -75,19 +78,19 @@ export function InstanceScreen({ navigation }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="url"
-          label="FediSuite-Instanz"
+          label={t('instanceLabel')}
           placeholder="https://app.fedisuite.com"
           value={input}
           onChangeText={setInput}
           error={error}
-          hint="Gib die URL der Instanz an, bei der du dich anmelden willst. HTTPS ist Standard. HTTP ist nur für lokale Entwicklung oder LAN zulässig."
+          hint={t('instanceHint')}
         />
-        <Button label="Aus Zwischenablage" onPress={handlePaste} variant="secondary" />
+        <Button label={t('pasteButton')} onPress={handlePaste} variant="secondary" />
       </Card>
 
       {recentInstances.length > 0 ? (
         <Card>
-          <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Zuletzt verwendet</Text>
+          <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('recentTitle')}</Text>
           <View style={styles.recentList}>
             {recentInstances.map((value) => (
               <Pressable

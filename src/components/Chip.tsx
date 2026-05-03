@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, Text, useColorScheme } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 
+import { useIsDark } from '../hooks/useIsDark';
 import { palette } from '../theme/colors';
 import { radius, spacing } from '../theme';
 
@@ -12,7 +13,7 @@ export function Chip({
   active?: boolean;
   onPress: () => void;
 }) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
 
   return (
     <Pressable

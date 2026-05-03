@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { useIsDark } from '../hooks/useIsDark';
 import { palette } from '../theme/colors';
 import { radius, spacing } from '../theme';
 
 export function MetricCard({ label, value, tone = 'default' }: { label: string; value: string | number; tone?: 'default' | 'danger' | 'accent' }) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
   const backgroundColor =
     tone === 'danger'
       ? 'rgba(241, 107, 107, 0.18)'

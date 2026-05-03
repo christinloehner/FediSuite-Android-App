@@ -1,11 +1,11 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
 
 import { LoadingView } from '../components/LoadingView';
 import { Screen } from '../components/Screen';
 import { useForegroundRefresh } from '../hooks/useForegroundRefresh';
+import { useIsDark } from '../hooks/useIsDark';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 import { InstanceScreen } from '../screens/instance/InstanceScreen';
 import { useInstanceStore } from '../store/instanceStore';
@@ -18,8 +18,8 @@ import type { AuthStackParamList } from './types';
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 export function RootNavigator() {
-  const colorScheme = useColorScheme();
-  const theme = colorScheme === 'light' ? fedisuiteLightTheme : fedisuiteDarkTheme;
+  const isDark = useIsDark();
+  const theme = isDark ? fedisuiteDarkTheme : fedisuiteLightTheme;
   const isHydrating = useSessionStore((state) => state.isHydrating);
   const token = useSessionStore((state) => state.token);
   const setHydrating = useSessionStore((state) => state.setHydrating);

@@ -1,7 +1,8 @@
 import type { PropsWithChildren, ReactElement, ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, useColorScheme, type RefreshControlProps } from 'react-native';
+import { ScrollView, StyleSheet, View, type RefreshControlProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useIsDark } from '../hooks/useIsDark';
 import { palette } from '../theme/colors';
 import { spacing } from '../theme';
 
@@ -12,8 +13,7 @@ type ScreenProps = PropsWithChildren<{
 }>;
 
 export function Screen({ children, scrollable, footer, refreshControl }: ScreenProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme !== 'light';
+  const isDark = useIsDark();
 
   const content = scrollable ? (
     <ScrollView contentContainerStyle={styles.content} refreshControl={refreshControl}>

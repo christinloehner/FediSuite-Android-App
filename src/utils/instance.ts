@@ -93,7 +93,13 @@ async function fetchJson(baseUrl: string, path: string) {
   });
 
   const text = await response.text();
-  const payload = text ? JSON.parse(text) : null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let payload: any = null;
+  try {
+    payload = text ? (JSON.parse(text) as unknown) : null;
+  } catch {
+    payload = null;
+  }
 
   return { response, payload };
 }

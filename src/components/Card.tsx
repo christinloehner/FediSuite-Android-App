@@ -1,11 +1,12 @@
 import type { PropsWithChildren } from 'react';
-import { StyleSheet, View, useColorScheme } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { useIsDark } from '../hooks/useIsDark';
 import { palette } from '../theme/colors';
 import { radius, spacing } from '../theme';
 
 export function Card({ children }: PropsWithChildren) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
 
   return <View style={[styles.card, { backgroundColor: isDark ? palette.panel : palette.surface }]}>{children}</View>;
 }

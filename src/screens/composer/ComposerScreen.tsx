@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as ImagePicker from 'expo-image-picker';
-import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { createScheduledPost, publishPostNow } from '../../api/posts';
 import { Button } from '../../components/Button';
@@ -12,6 +12,8 @@ import { Screen } from '../../components/Screen';
 import { TextField } from '../../components/TextField';
 import { useAuthRecovery } from '../../hooks/useAuthRecovery';
 import { useBootstrap } from '../../hooks/useBootstrap';
+import { useIsDark } from '../../hooks/useIsDark';
+import { useI18n } from '../../i18n';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useSessionStore } from '../../store/sessionStore';
 import { palette } from '../../theme/colors';
@@ -26,7 +28,8 @@ import {
 import { getErrorMessage, isAuthError } from '../../utils/error';
 
 export function ComposerScreen() {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
+  const { t } = useI18n('composer');
   const queryClient = useQueryClient();
   const instanceUrl = useInstanceStore((state) => state.activeInstanceUrl);
   const token = useSessionStore((state) => state.token);
@@ -35,8 +38,8 @@ export function ComposerScreen() {
   const recoverFromAuthFailure = useAuthRecovery();
 
   const accounts = bootstrapQuery.data?.accounts ?? [];
-  const initialAccountId = bootstrapQuery.data?.user.default_account_id ?? accounts[0]?.id ?? null;
-  const [accountId, setAccountId] = useState<number | null>(initialAccountId);
+  const resolvedDefaultAccountId = bootstrapQuery.data?.user.default_account_id ?? accounts[0]?.id ?? null;
+  const [accountId, setAccountId] = useState<number | null>(resolvedDefaultAccountId);
   const [content, setContent] = useState('');
   const [visibility, setVisibility] = useState<ComposerVisibility>('public');
   const [postLanguage, setPostLanguage] = useState('de');
@@ -47,6 +50,16 @@ export function ComposerScreen() {
   const [error, setError] = useState<string | null>(null);
   const [mediaItems, setMediaItems] = useState<ComposerMediaItem[]>([]);
 
+  // Sync accountId when bootstrap data arrives after initial render
+  useEffect(() => {
+    if (accountId === null && resolvedDefaultAccountId !== null) {
+      setAccountId(resolvedDefaultAccountId);
+    }
+  // resolvedDefaultAccountId is the only trigger needed; accountId is
+  // intentionally omitted to avoid overriding the user's manual selection.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedDefaultAccountId]);
+
   const selectedAccount = useMemo(
     () => accounts.find((account) => account.id === accountId) ?? null,
     [accounts, accountId],
@@ -56,19 +69,19 @@ export function ComposerScreen() {
   const submitMutation = useMutation({
     mutationFn: async (mode: 'schedule' | 'publish') => {
       if (!instanceUrl || !token || !selectedAccount) {
-        throw new Error('Instanz, Sitzung oder Account fehlen.');
+        throw new Error(t('noSessionError'));
       }
 
       if (!content.trim()) {
-        throw new Error('Der Inhalt des Posts darf nicht leer sein.');
+        throw new Error(t('emptyContentError'));
       }
 
       if (constraints.titleRequired && !title.trim()) {
-        throw new Error('Für diesen Account ist ein Titel erforderlich.');
+        throw new Error(t('titleRequiredError'));
       }
 
       if (content.length > constraints.maxCharacters) {
-        throw new Error(`Der Post überschreitet das Zeichenlimit von ${constraints.maxCharacters}.`);
+        throw new Error(t('tooLongError', { limit: constraints.maxCharacters }));
       }
 
       const scheduledAt = mode === 'schedule' ? buildScheduledAt(dateInput, timeInput) : null;
@@ -97,10 +110,10 @@ export function ComposerScreen() {
       setTimeInput('');
       setMediaItems([]);
       setError(null);
-      Alert.alert(mode === 'schedule' ? 'Post eingeplant' : 'Post veröffentlicht');
+      Alert.alert(mode === 'schedule' ? t('scheduledAlert') : t('publishedAlert'));
     },
     onError: async (submitError) => {
-      setError(getErrorMessage(submitError, 'Composer-Aktion fehlgeschlagen.'));
+      setError(getErrorMessage(submitError, t('composerError')));
 
       if (isAuthError(submitError) && instanceUrl) {
         await recoverFromAuthFailure();
@@ -110,19 +123,19 @@ export function ComposerScreen() {
 
   const handlePickMedia = async () => {
     if (!selectedAccount) {
-      setError('Wähle zuerst einen Account aus.');
+      setError(t('pickAccountFirst'));
       return;
     }
 
     const allowed = getAllowedMediaCount(selectedAccount);
     if (allowed === 0) {
-      setError('Dieser Account erlaubt keine Medien-Uploads.');
+      setError(t('noMediaAllowed'));
       return;
     }
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError('Zugriff auf die Medienbibliothek wurde nicht erlaubt.');
+      setError(t('permissionDenied'));
       return;
     }
 
@@ -154,12 +167,12 @@ export function ComposerScreen() {
       footer={
         <View style={styles.footerActions}>
           <Button
-            label="Jetzt veröffentlichen"
+            label={t('publishNow')}
             onPress={() => submitMutation.mutate('publish')}
             loading={submitMutation.isPending}
           />
           <Button
-            label="Einplanen"
+            label={t('schedule')}
             onPress={() => submitMutation.mutate('schedule')}
             loading={submitMutation.isPending}
             variant="secondary"
@@ -168,21 +181,21 @@ export function ComposerScreen() {
       }
     >
       <View>
-        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>Composer</Text>
+        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>{t('title')}</Text>
         <Text style={[styles.subtitle, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-          Schreiben, planen und direkt veröffentlichen
+          {t('subtitle')}
         </Text>
       </View>
 
       {accounts.length === 0 ? (
         <EmptyState
-          title="Keine Accounts verfügbar"
-          description="Zum Verfassen eines Posts muss mindestens ein Fediverse-Account verbunden sein."
+          title={t('noAccountsTitle')}
+          description={t('noAccountsDescription')}
         />
       ) : (
         <>
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Account</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('accountTitle')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.chipRow}>
                 {accounts.map((account) => (
@@ -190,22 +203,30 @@ export function ComposerScreen() {
                     key={account.id}
                     label={account.display_name || `@${account.username}`}
                     active={accountId === account.id}
-                    onPress={() => setAccountId(account.id)}
+                    onPress={() => {
+                      setAccountId(account.id);
+                      setMediaItems([]);
+                      setError(null);
+                    }}
                   />
                 ))}
               </View>
             </ScrollView>
             {selectedAccount ? (
               <Text style={[styles.helper, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                {selectedAccount.instance_type} | max {constraints.maxCharacters} Zeichen | max {constraints.allowedMediaCount} Medien
+                {t('accountHelper', {
+                  type: selectedAccount.instance_type,
+                  chars: constraints.maxCharacters,
+                  media: constraints.allowedMediaCount,
+                })}
               </Text>
             ) : null}
           </Card>
 
           <Card>
             <TextField
-              label="Inhalt"
-              placeholder="Was möchtest du veröffentlichen?"
+              label={t('contentLabel')}
+              placeholder={t('contentPlaceholder')}
               multiline
               value={content}
               onChangeText={(value) => {
@@ -214,22 +235,22 @@ export function ComposerScreen() {
               }}
               style={[styles.textArea, { textAlignVertical: 'top' }]}
               error={error}
-              hint={`${content.length}/${constraints.maxCharacters || 0} Zeichen`}
+              hint={t('contentHint', { chars: content.length, max: constraints.maxCharacters || 0 })}
             />
             <TextField
-              label="Titel"
-              placeholder="Optional, bei PeerTube erforderlich"
+              label={t('titleLabel')}
+              placeholder={t('titlePlaceholder')}
               value={title}
               onChangeText={setTitle}
             />
             <TextField
-              label="Content Warning / Spoiler"
-              placeholder="Optional"
+              label={t('cwLabel')}
+              placeholder={t('cwPlaceholder')}
               value={spoilerText}
               onChangeText={setSpoilerText}
             />
             <TextField
-              label="Sprache"
+              label={t('languageLabel')}
               placeholder="de"
               value={postLanguage}
               onChangeText={setPostLanguage}
@@ -237,7 +258,7 @@ export function ComposerScreen() {
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Sichtbarkeit</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('visibilityTitle')}</Text>
             <View style={styles.filterWrap}>
               {(['public', 'unlisted', 'private', 'direct'] as ComposerVisibility[]).map((option) => (
                 <Chip
@@ -251,28 +272,28 @@ export function ComposerScreen() {
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Zeitplanung</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('schedulingTitle')}</Text>
             <TextField
-              label="Datum"
+              label={t('dateLabel')}
               placeholder="2026-03-24"
               value={dateInput}
               onChangeText={setDateInput}
             />
             <TextField
-              label="Uhrzeit"
+              label={t('timeLabel')}
               placeholder="18:30"
               value={timeInput}
               onChangeText={setTimeInput}
-              hint="Für 'Einplanen' werden beide Felder benötigt."
+              hint={t('timeHint')}
             />
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Medien</Text>
-            <Button label="Medien auswählen" onPress={handlePickMedia} variant="secondary" />
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('mediaTitle')}</Text>
+            <Button label={t('pickMedia')} onPress={handlePickMedia} variant="secondary" />
             {mediaItems.length === 0 ? (
               <Text style={[styles.helper, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                Noch keine Medien ausgewählt.
+                {t('noMedia')}
               </Text>
             ) : (
               mediaItems.map((item, index) => (
@@ -281,8 +302,8 @@ export function ComposerScreen() {
                     {item.fileName}
                   </Text>
                   <TextField
-                    label={`Alt-Text ${index + 1}`}
-                    placeholder="Beschreibe das Medium"
+                    label={t('altTextLabel', { index: index + 1 })}
+                    placeholder={t('altTextPlaceholder')}
                     value={item.altText}
                     onChangeText={(value) =>
                       setMediaItems((current) =>

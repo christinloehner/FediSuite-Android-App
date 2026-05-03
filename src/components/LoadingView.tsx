@@ -1,10 +1,11 @@
-import { ActivityIndicator, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
+import { useIsDark } from '../hooks/useIsDark';
 import { palette } from '../theme/colors';
 import { spacing } from '../theme';
 
 export function LoadingView({ label }: { label: string }) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
 
   return (
     <View style={styles.container}>

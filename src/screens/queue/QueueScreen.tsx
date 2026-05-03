@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { RefreshControl, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { useEffect, useState } from 'react';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { deletePost, repostPost, updatePost, type UpdatePostInput } from '../../api/posts';
 import type { QueuePost } from '../../api/types';
@@ -13,7 +13,9 @@ import { LoadingView } from '../../components/LoadingView';
 import { Screen } from '../../components/Screen';
 import { TextField } from '../../components/TextField';
 import { useAuthRecovery } from '../../hooks/useAuthRecovery';
+import { useIsDark } from '../../hooks/useIsDark';
 import { usePosts } from '../../hooks/usePosts';
+import { useI18n } from '../../i18n';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useSessionStore } from '../../store/sessionStore';
 import { palette } from '../../theme/colors';
@@ -22,7 +24,8 @@ import { getErrorMessage, isAuthError } from '../../utils/error';
 import { getMediaCount, getPostStatus, getPostTimestamp, getSpoilerText, stripContent, type QueueFilter } from '../../utils/post';
 
 export function QueueScreen() {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
+  const { t } = useI18n('queue');
   const queryClient = useQueryClient();
   const instanceUrl = useInstanceStore((state) => state.activeInstanceUrl);
   const token = useSessionStore((state) => state.token);
@@ -32,10 +35,16 @@ export function QueueScreen() {
   const [editingPostId, setEditingPostId] = useState<number | null>(null);
   const recoverFromAuthFailure = useAuthRecovery();
 
+  useEffect(() => {
+    if (postsQuery.error && isAuthError(postsQuery.error) && instanceUrl) {
+      void recoverFromAuthFailure();
+    }
+  }, [postsQuery.error, instanceUrl, recoverFromAuthFailure]);
+
   const deleteMutation = useMutation({
     mutationFn: async (postId: number) => {
       if (!instanceUrl || !token) {
-        throw new Error('Keine aktive Sitzung vorhanden.');
+        throw new Error(t('noSession'));
       }
 
       return deletePost(instanceUrl, token, language, postId);
@@ -54,7 +63,7 @@ export function QueueScreen() {
   const repostMutation = useMutation({
     mutationFn: async (postId: number) => {
       if (!instanceUrl || !token) {
-        throw new Error('Keine aktive Sitzung vorhanden.');
+        throw new Error(t('noSession'));
       }
 
       return repostPost(instanceUrl, token, language, postId);
@@ -73,7 +82,7 @@ export function QueueScreen() {
   const updateMutation = useMutation({
     mutationFn: async (input: { postId: number; data: UpdatePostInput }) => {
       if (!instanceUrl || !token) {
-        throw new Error('Keine aktive Sitzung vorhanden.');
+        throw new Error(t('noSession'));
       }
 
       return updatePost(instanceUrl, token, language, input.postId, input.data);
@@ -93,22 +102,18 @@ export function QueueScreen() {
   if (postsQuery.isLoading) {
     return (
       <Screen>
-        <LoadingView label="Posts werden geladen..." />
+        <LoadingView label={t('loadingLabel')} />
       </Screen>
     );
   }
 
   if (postsQuery.error) {
-    if (isAuthError(postsQuery.error) && instanceUrl) {
-      void recoverFromAuthFailure();
-    }
-
     return (
       <Screen>
         <ErrorStateView
-          title="Queue konnte nicht geladen werden"
+          title={t('errorTitle')}
           message={getErrorMessage(postsQuery.error)}
-          actionLabel="Erneut laden"
+          actionLabel={t('retryLabel')}
           onAction={() => void postsQuery.refetch()}
         />
       </Screen>
@@ -125,14 +130,14 @@ export function QueueScreen() {
       refreshControl={<RefreshControl refreshing={postsQuery.isRefetching} onRefresh={() => void postsQuery.refetch()} />}
     >
       <View>
-        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>Queue</Text>
+        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>{t('title')}</Text>
         <Text style={[styles.subtitle, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-          Mobile Verwaltung geplanter, fehlgeschlagener, veröffentlichter und gespeicherter Posts
+          {t('subtitle')}
         </Text>
       </View>
 
       <Card>
-        <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Statusfilter</Text>
+        <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('filterTitle')}</Text>
         <View style={styles.filterWrap}>
           <Chip label={`Scheduled ${counts.scheduled}`} active={activeFilter === 'scheduled'} onPress={() => setActiveFilter('scheduled')} />
           <Chip label={`Failed ${counts.failed}`} active={activeFilter === 'failed'} onPress={() => setActiveFilter('failed')} />
@@ -143,8 +148,8 @@ export function QueueScreen() {
 
       {filteredPosts.length === 0 ? (
         <EmptyState
-          title={`Keine ${activeFilter}-Posts`}
-          description="Für den aktuell gewählten Status hat die Instanz keine Einträge zurückgegeben."
+          title={t('emptyTitle', { filter: activeFilter })}
+          description={t('emptyDescription')}
         />
       ) : (
         filteredPosts.map((post) => (
@@ -187,7 +192,8 @@ function QueuePostCard({
   onDelete: () => void;
   onRepost: () => void;
 }) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
+  const { t } = useI18n('queue');
   const timestamp = getPostTimestamp(post);
   const [content, setContent] = useState(String(post.content ?? ''));
   const [title, setTitle] = useState(String(post.title ?? ''));
@@ -211,7 +217,7 @@ function QueuePostCard({
     <Card>
       <View style={styles.cardHeader}>
         <Text style={[styles.accountName, { color: isDark ? palette.text : palette.lightText }]}>
-          {post.account_username ? `@${post.account_username}` : 'Unbekannter Account'}
+          {post.account_username ? `@${post.account_username}` : t('unknownAccount')}
         </Text>
         <Text style={[styles.badge, { color: isDark ? palette.accentWarm : palette.accentStrong }]}>
           {activeFilter}
@@ -221,39 +227,39 @@ function QueuePostCard({
         {stripContent(post.content)}
       </Text>
       <Text style={[styles.meta, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-        Sichtbarkeit: {post.visibility ?? 'standard'} | Sprache: {post.language ?? 'unbekannt'} | Medien: {getMediaCount(post)}
+        {t('metaVisibility', { value: post.visibility ?? 'standard' })} | {t('metaLanguage', { value: post.language ?? t('unknownAccount') })} | {t('metaMedia', { count: getMediaCount(post) })}
       </Text>
       <Text style={[styles.meta, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-        {timestamp ? `Zeitpunkt: ${timestamp}` : 'Kein Zeitpunkt vorhanden'} | Plattform: {post.account_instance_type ?? 'unbekannt'}
+        {timestamp ? t('metaTimestamp', { time: timestamp }) : t('metaNoTimestamp')} | {t('metaPlatform', { type: post.account_instance_type ?? 'unknown' })}
       </Text>
       {post.error_message || post.error ? (
-        <Text style={styles.errorText}>Fehler: {String(post.error_message ?? post.error)}</Text>
+        <Text style={styles.errorText}>{t('errorPrefix', { message: String(post.error_message ?? post.error) })}</Text>
       ) : null}
 
       {isEditing ? (
         <View style={styles.editForm}>
           <TextField
-            label="Inhalt"
+            label={t('editContent')}
             multiline
             value={content}
             onChangeText={setContent}
             style={[styles.textArea, { textAlignVertical: 'top' }]}
           />
-          <TextField label="Titel" value={title} onChangeText={setTitle} />
-          <TextField label="Sichtbarkeit" value={visibility} onChangeText={setVisibility} />
-          <TextField label="Sprache" value={language} onChangeText={setLanguage} />
-          <TextField label="Content Warning / Spoiler" value={spoilerText} onChangeText={setSpoilerText} />
+          <TextField label={t('editTitle')} value={title} onChangeText={setTitle} />
+          <TextField label={t('editVisibility')} value={visibility} onChangeText={setVisibility} />
+          <TextField label={t('editLanguage')} value={language} onChangeText={setLanguage} />
+          <TextField label={t('editSpoiler')} value={spoilerText} onChangeText={setSpoilerText} />
           {(activeFilter === 'scheduled' || activeFilter === 'draft' || activeFilter === 'failed') ? (
             <TextField
-              label="Geplant für (ISO)"
+              label={t('editScheduledAt')}
               value={scheduledAt}
               onChangeText={setScheduledAt}
-              hint="Leer lassen oder ISO-Zeit wie 2026-03-24T18:30:00.000Z"
+              hint={t('editScheduledAtHint')}
             />
           ) : null}
           <View style={styles.actions}>
             <Button
-              label="Speichern"
+              label={t('save')}
               onPress={() =>
                 onSave({
                   content,
@@ -266,15 +272,15 @@ function QueuePostCard({
               }
               disabled={busy}
             />
-            <Button label="Abbrechen" onPress={handleReset} variant="secondary" disabled={busy} />
+            <Button label={t('cancel')} onPress={handleReset} variant="secondary" disabled={busy} />
           </View>
         </View>
       ) : (
         <View style={styles.actions}>
-          <Button label="Bearbeiten" onPress={onStartEdit} variant="secondary" disabled={busy} />
-          <Button label="Löschen" onPress={onDelete} variant="danger" disabled={busy} />
+          <Button label={t('edit')} onPress={onStartEdit} variant="secondary" disabled={busy} />
+          <Button label={t('delete')} onPress={onDelete} variant="danger" disabled={busy} />
           {(activeFilter === 'failed' || activeFilter === 'draft') ? (
-            <Button label="Repost" onPress={onRepost} variant="secondary" disabled={busy} />
+            <Button label={t('repost')} onPress={onRepost} variant="secondary" disabled={busy} />
           ) : null}
         </View>
       )}

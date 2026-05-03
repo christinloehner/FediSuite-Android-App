@@ -1,5 +1,6 @@
-import { StyleSheet, Text, useColorScheme } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
+import { useIsDark } from '../hooks/useIsDark';
 import { palette } from '../theme/colors';
 import { Button } from './Button';
 import { Card } from './Card';
@@ -15,7 +16,7 @@ export function ErrorStateView({
   actionLabel: string;
   onAction: () => void;
 }) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
 
   return (
     <Card>
