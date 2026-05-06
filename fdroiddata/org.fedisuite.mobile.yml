@@ -32,6 +32,6 @@ Builds:
     scandelete:
       - node_modules
 
-UpdateCheckMode: HTTP
+UpdateCheckMode: Static
 CurrentVersion: "0.9.13"
 CurrentVersionCode: 913
