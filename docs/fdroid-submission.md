@@ -12,9 +12,9 @@ Diese Datei beschreibt den aktuell empfohlenen Weg, um `org.fedisuite.mobile` in
 ## Aktueller Stand
 
 - Paketname: `org.fedisuite.mobile`
-- Aktuelle Version: `0.9.12`
-- Aktueller Android- und F-Droid-`versionCode`: `912`
-- Tag fuer den letzten Release-Commit: `v0.9.12`
+- Aktuelle Version: `0.9.13`
+- Aktueller Android- und F-Droid-`versionCode`: `913`
+- Tag fuer den letzten Release-Commit: `v0.9.13`
 - Update-Strategie fuer F-Droid aktuell bewusst konservativ: `UpdateCheckMode: Static`
 - Build-Metadaten installieren auf dem F-Droid-Buildserver explizit `npm` und fuehren vor Gradle ein `npm ci` im Repo-Root aus
 

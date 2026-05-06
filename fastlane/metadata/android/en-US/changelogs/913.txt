@@ -1,0 +1,6 @@
+Version 0.9.13
+
+- added deterministic Android and F-Droid versionCode handling based on the repository version file
+- added localized Fastlane metadata for German and Italian
+- added F-Droid submission metadata, asset rights documentation and builder setup notes
+- added Expo and React Native F-Droid build steps for npm provisioning and npm ci before Gradle

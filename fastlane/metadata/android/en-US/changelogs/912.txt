@@ -1,6 +1,0 @@
-Version 0.9.12
-
-- added English app localization across screens, tabs and error states
-- added persistent app-only language and theme settings
-- added light theme support alongside dark and system mode
-- fixed theme switching so all core UI components now respect the selected mode

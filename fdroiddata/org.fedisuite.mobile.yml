@@ -12,9 +12,9 @@ RepoType: git
 Repo: https://github.com/christinloehner/FediSuite-Android-App.git
 
 Builds:
-  - versionName: "0.9.12"
-    versionCode: 912
-    commit: v0.9.12
+  - versionName: "0.9.13"
+    versionCode: 913
+    commit: v0.9.13
     subdir: android
     sudo:
       - sysctl fs.inotify.max_user_watches=524288 || true
@@ -29,5 +29,5 @@ Builds:
       - node_modules
 
 UpdateCheckMode: Static
-CurrentVersion: "0.9.12"
-CurrentVersionCode: 912
+CurrentVersion: "0.9.13"
+CurrentVersionCode: 913
