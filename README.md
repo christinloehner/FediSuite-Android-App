@@ -298,6 +298,25 @@ If branding changes, update both:
 - Expo asset files under `assets/`
 - native Android launcher assets under `android/app/src/main/res/`
 
+The branding, screenshots and store graphics shipped in this repository are documented in [ASSET_LICENSES.md](./ASSET_LICENSES.md).
+
+## Release Versioning
+
+The canonical app version is stored in the plain-text file `version`.
+
+Android and F-Droid builds derive the numeric `versionCode` directly from that semantic version using this formula:
+
+```text
+MAJOR * 10000 + MINOR * 100 + PATCH
+```
+
+Examples:
+
+- `0.9.12` -> `912`
+- `1.2.3` -> `10203`
+
+This keeps release tags, Fastlane changelogs and Android upgrade paths aligned.
+
 ## Related FediSuite URLs
 
 - Website: [https://www.fedisuite.com](https://www.fedisuite.com)

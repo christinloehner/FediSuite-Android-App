@@ -1,1 +1,1 @@
-Manage and analyze Fediverse accounts on hosted or self-hosted FediSuite.
+Manage and analyze Fediverse accounts on hosted or self-hosted FediSuite

@@ -1,15 +1,12 @@
 const fs = require('fs');
 const path = require('path');
+const { FALLBACK_VERSION, readVersionFile, versionCodeFromVersion } = require('./versioning');
 
 const projectRoot = path.join(__dirname, '..');
-const versionPath = path.join(projectRoot, 'version');
 const generatedDir = path.join(projectRoot, 'src', 'generated');
 const generatedVersionFile = path.join(generatedDir, 'appVersion.ts');
-
-const fallbackVersion = '1.0.0';
-const appVersion = fs.existsSync(versionPath)
-  ? fs.readFileSync(versionPath, 'utf8').trim() || fallbackVersion
-  : fallbackVersion;
+const appVersion = readVersionFile(projectRoot, FALLBACK_VERSION);
+const appVersionCode = versionCodeFromVersion(appVersion);
 
 if (!fs.existsSync(generatedDir)) {
   fs.mkdirSync(generatedDir, { recursive: true });
@@ -17,8 +14,12 @@ if (!fs.existsSync(generatedDir)) {
 
 fs.writeFileSync(
   generatedVersionFile,
-  `export const appVersion = ${JSON.stringify(appVersion)};\n`,
+  [
+    `export const appVersion = ${JSON.stringify(appVersion)};`,
+    `export const appVersionCode = ${appVersionCode};`,
+    '',
+  ].join('\n'),
   'utf8',
 );
 
-console.log(`Synced app version: ${appVersion}`);
+console.log(`Synced app version: ${appVersion} (${appVersionCode})`);

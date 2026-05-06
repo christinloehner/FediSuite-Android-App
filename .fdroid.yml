@@ -1,0 +1,17 @@
+Categories:
+  - Internet
+License: GPL-3.0-only
+SourceCode: https://github.com/christinloehner/FediSuite-Android-App
+IssueTracker: https://github.com/christinloehner/FediSuite-Android-App/issues
+
+Builds:
+  - versionName: "0.9.12"
+    versionCode: 912
+    commit: v0.9.12
+    subdir: android
+    gradle:
+      - yes
+
+UpdateCheckMode: Static
+CurrentVersion: "0.9.12"
+CurrentVersionCode: 912

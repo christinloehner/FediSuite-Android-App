@@ -1,0 +1,29 @@
+FediSuite ist ein mobiler Client fuer die FediSuite-Plattform zur Verwaltung von Fediverse-Konten.
+
+Die App verbindet sich entweder mit der offiziellen gehosteten FediSuite-Instanz unter app.fedisuite.com oder mit einer eigenen selbst gehosteten FediSuite-Instanz.
+
+Mit der Android-App kannst du:
+
+- dich mit einer FediSuite-Instanz deiner Wahl verbinden
+- dich sicher mit instanzgebundenen Sitzungen anmelden
+- dein mobiles Dashboard und Kontozusammenfassungen ansehen
+- Kontoanalysen und Insights pruefen
+- deine Warteschlange mit geplanten, veroeffentlichten, fehlgeschlagenen und Entwurfs-Beitraegen verwalten
+- neue Beitraege erstellen, planen oder sofort veroeffentlichen
+- Medien anhaengen und vor dem Veroeffentlichen Alt-Texte pflegen
+- verbundene Fediverse-Konten verwalten
+- Konten direkt in der App trennen
+- Sprach- und Theme-Einstellungen anpassen
+- mobile Praeferenzen und Standardkonto-Einstellungen aktualisieren
+- einen Admin-Bereich fuer Hinweise und registrierte Benutzer nutzen, wenn dein FediSuite-Konto Admin-Rechte hat
+
+Die App ist als echtes mobiles Erlebnis gestaltet:
+
+- Touch-orientierte Navigation
+- Bottom Tabs
+- kompakte Dashboard-Karten
+- Unterstuetzung fuer dunkles, helles und System-Theme
+- App-Lokalisierung auf Englisch, Deutsch und Italienisch
+- klare Lade-, Fehler- und Leerzustaende
+
+FediSuite verfolgt die Idee eines zentralen Management-Hubs fuer mehrere Fediverse-Dienste und Konten, ohne Benutzer auf ein fest verdrahtetes Backend festzulegen. Stattdessen bleibt die App bewusst instanzbasiert.

@@ -14,7 +14,26 @@ def readVersionFile = { String fallback ->
     return value ?: fallback
 }
 
+def versionCodeFromVersion = { String versionName ->
+    def matcher = (versionName =~ /(\d+)\.(\d+)\.(\d+)/)
+
+    if (!matcher.matches()) {
+        throw new GradleException("Unsupported version format '${versionName}'. Expected MAJOR.MINOR.PATCH.")
+    }
+
+    def major = matcher[0][1].toInteger()
+    def minor = matcher[0][2].toInteger()
+    def patch = matcher[0][3].toInteger()
+
+    if (minor >= 100 || patch >= 100) {
+        throw new GradleException("Unsupported version '${versionName}'. Minor and patch must stay below 100.")
+    }
+
+    return major * 10000 + minor * 100 + patch
+}
+
 def appVersionName = readVersionFile("1.0.0")
+def appVersionCode = versionCodeFromVersion(appVersionName)
 
 tasks.register("syncAppVersion", Exec) {
     workingDir projectRoot
@@ -109,7 +128,7 @@ android {
         applicationId 'org.fedisuite.mobile'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
+        versionCode appVersionCode
         versionName appVersionName
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""

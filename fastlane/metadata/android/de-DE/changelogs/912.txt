@@ -1,0 +1,6 @@
+Version 0.9.12
+
+- englische App-Lokalisierung fuer Screens, Tabs und Fehlermeldungen hinzugefuegt
+- persistente app-lokale Sprach- und Theme-Einstellungen hinzugefuegt
+- helles Theme neben dunklem und Systemmodus hinzugefuegt
+- Theme-Wechsel korrigiert, damit alle Kernkomponenten den gewaehlten Modus beachten

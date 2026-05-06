@@ -1,0 +1,6 @@
+Versione 0.9.12
+
+- aggiunta la localizzazione inglese dell'app per schermate, tab e messaggi di errore
+- aggiunte preferenze persistenti locali all'app per lingua e tema
+- aggiunto il tema chiaro accanto a tema scuro e modalita di sistema
+- corretto il cambio tema affinche tutti i componenti principali rispettino la modalita selezionata
