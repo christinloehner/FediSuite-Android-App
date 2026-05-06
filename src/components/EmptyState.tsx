@@ -1,11 +1,12 @@
-import { StyleSheet, Text, useColorScheme } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
+import { useIsDark } from '../hooks/useIsDark';
 import { palette } from '../theme/colors';
 import { spacing } from '../theme';
 import { Card } from './Card';
 
 export function EmptyState({ title, description }: { title: string; description: string }) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
 
   return (
     <Card>

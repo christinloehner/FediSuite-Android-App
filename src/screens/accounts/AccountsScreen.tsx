@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { RefreshControl, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { useEffect } from 'react';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { disconnectAccount } from '../../api/accounts';
 import type { BootstrapAccount } from '../../api/types';
@@ -9,9 +10,10 @@ import { EmptyState } from '../../components/EmptyState';
 import { ErrorStateView } from '../../components/ErrorStateView';
 import { LoadingView } from '../../components/LoadingView';
 import { Screen } from '../../components/Screen';
-import { useAccounts } from '../../hooks/useAccounts';
 import { useAuthRecovery } from '../../hooks/useAuthRecovery';
 import { useBootstrap } from '../../hooks/useBootstrap';
+import { useIsDark } from '../../hooks/useIsDark';
+import { useI18n } from '../../i18n';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useSessionStore } from '../../store/sessionStore';
 import { palette } from '../../theme/colors';
@@ -19,25 +21,30 @@ import { spacing } from '../../theme';
 import { getErrorMessage, isAuthError } from '../../utils/error';
 
 export function AccountsScreen() {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
+  const { t } = useI18n('accounts');
   const queryClient = useQueryClient();
   const instanceUrl = useInstanceStore((state) => state.activeInstanceUrl);
   const token = useSessionStore((state) => state.token);
   const language = useSessionStore((state) => state.language);
   const bootstrapQuery = useBootstrap();
-  const accountsQuery = useAccounts();
   const recoverFromAuthFailure = useAuthRecovery();
+
+  useEffect(() => {
+    if (bootstrapQuery.error && isAuthError(bootstrapQuery.error) && instanceUrl) {
+      void recoverFromAuthFailure();
+    }
+  }, [bootstrapQuery.error, instanceUrl, recoverFromAuthFailure]);
 
   const disconnectMutation = useMutation({
     mutationFn: async (accountId: number) => {
       if (!instanceUrl || !token) {
-        throw new Error('Keine aktive Sitzung vorhanden.');
+        throw new Error(t('noSession'));
       }
 
       return disconnectAccount(instanceUrl, token, language, accountId);
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['instance', instanceUrl, 'accounts'] });
       await queryClient.invalidateQueries({ queryKey: ['instance', instanceUrl, 'bootstrap'] });
     },
     onError: async (error) => {
@@ -47,50 +54,46 @@ export function AccountsScreen() {
     },
   });
 
-  if (accountsQuery.isLoading) {
+  if (bootstrapQuery.isLoading) {
     return (
       <Screen>
-        <LoadingView label="Accounts werden geladen..." />
+        <LoadingView label={t('loadingLabel')} />
       </Screen>
     );
   }
 
-  if (accountsQuery.error) {
-    if (isAuthError(accountsQuery.error) && instanceUrl) {
-      void recoverFromAuthFailure();
-    }
-
+  if (bootstrapQuery.error) {
     return (
       <Screen>
         <ErrorStateView
-          title="Accounts konnten nicht geladen werden"
-          message={getErrorMessage(accountsQuery.error)}
-          actionLabel="Erneut laden"
-          onAction={() => void accountsQuery.refetch()}
+          title={t('errorTitle')}
+          message={getErrorMessage(bootstrapQuery.error)}
+          actionLabel={t('retryLabel')}
+          onAction={() => void bootstrapQuery.refetch()}
         />
       </Screen>
     );
   }
 
-  const accounts = accountsQuery.data ?? [];
+  const accounts = bootstrapQuery.data?.accounts ?? [];
   const defaultAccountId = bootstrapQuery.data?.user.default_account_id ?? null;
 
   return (
     <Screen
       scrollable
-      refreshControl={<RefreshControl refreshing={accountsQuery.isRefetching} onRefresh={() => void accountsQuery.refetch()} />}
+      refreshControl={<RefreshControl refreshing={bootstrapQuery.isRefetching} onRefresh={() => void bootstrapQuery.refetch()} />}
     >
       <View>
-        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>Accounts</Text>
+        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>{t('title')}</Text>
         <Text style={[styles.subtitle, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-          Verbundene Fediverse-Accounts, Importstatus und Auth-Probleme
+          {t('subtitle')}
         </Text>
       </View>
 
       {accounts.length === 0 ? (
         <EmptyState
-          title="Keine Accounts verbunden"
-          description="Die Instanz hat aktuell keine verbundenen Fediverse-Accounts für diesen Benutzer."
+          title={t('noAccountsTitle')}
+          description={t('noAccountsDescription')}
         />
       ) : (
         accounts.map((account) => (
@@ -118,7 +121,8 @@ function AccountCard({
   busy: boolean;
   onDisconnect: () => void;
 }) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
+  const { t } = useI18n('accounts');
 
   return (
     <Card>
@@ -132,28 +136,35 @@ function AccountCard({
           </Text>
         </View>
         {isDefault ? (
-          <Text style={[styles.defaultBadge, { color: isDark ? palette.accentWarm : palette.accentStrong }]}>Default</Text>
+          <Text style={[styles.defaultBadge, { color: isDark ? palette.accentWarm : palette.accentStrong }]}>{t('defaultBadge')}</Text>
         ) : null}
       </View>
 
       <Text style={[styles.meta, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-        {account.instance_type} | Follower {account.stats_followers} | Following {account.stats_following}
+        {t('metaStats', {
+          type: account.instance_type,
+          followers: account.stats_followers,
+          following: account.stats_following,
+        })}
       </Text>
       <Text style={[styles.meta, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-        Effektive Posts {account.effective_statuses_count} | Indexed {account.indexed_posts_count}
+        {t('metaEffective', {
+          effective: account.effective_statuses_count,
+          indexed: account.indexed_posts_count,
+        })}
       </Text>
 
       {account.import_status ? (
         <Text style={[styles.infoBadge, { color: isDark ? palette.accentWarm : palette.accentStrong }]}>
-          Import: {account.import_status}
+          {t('importStatus', { status: account.import_status })}
         </Text>
       ) : null}
 
       {account.auth_error_message ? (
-        <Text style={styles.errorText}>Auth-Fehler: {account.auth_error_message}</Text>
+        <Text style={styles.errorText}>{t('authError', { message: account.auth_error_message })}</Text>
       ) : null}
 
-      <Button label="Disconnect" onPress={onDisconnect} variant="danger" disabled={busy} />
+      <Button label={t('disconnect')} onPress={onDisconnect} variant="danger" disabled={busy} />
     </Card>
   );
 }

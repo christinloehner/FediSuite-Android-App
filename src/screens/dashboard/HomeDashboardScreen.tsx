@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { RefreshControl, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { useEffect } from 'react';
+import { RefreshControl, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { Button } from '../../components/Button';
@@ -12,6 +13,8 @@ import { NoticeBanner } from '../../components/NoticeBanner';
 import { Screen } from '../../components/Screen';
 import { useAuthRecovery } from '../../hooks/useAuthRecovery';
 import { useBootstrap } from '../../hooks/useBootstrap';
+import { useIsDark } from '../../hooks/useIsDark';
+import { useI18n } from '../../i18n';
 import type { DashboardStackParamList } from '../../navigation/types';
 import { useInstanceStore } from '../../store/instanceStore';
 import { palette } from '../../theme/colors';
@@ -21,31 +24,34 @@ import { getErrorMessage, isAuthError } from '../../utils/error';
 type Props = NativeStackScreenProps<DashboardStackParamList, 'Home'>;
 
 export function HomeDashboardScreen({ navigation }: Props) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
+  const { t } = useI18n('home');
   const queryClient = useQueryClient();
   const instanceUrl = useInstanceStore((state) => state.activeInstanceUrl);
   const bootstrapQuery = useBootstrap();
   const recoverFromAuthFailure = useAuthRecovery();
 
+  useEffect(() => {
+    if (bootstrapQuery.error && isAuthError(bootstrapQuery.error) && instanceUrl) {
+      void recoverFromAuthFailure();
+    }
+  }, [bootstrapQuery.error, instanceUrl, recoverFromAuthFailure]);
+
   if (bootstrapQuery.isLoading) {
     return (
       <Screen>
-        <LoadingView label="Bootstrap-Daten werden geladen..." />
+        <LoadingView label={t('loadingLabel')} />
       </Screen>
     );
   }
 
   if (bootstrapQuery.error) {
-    if (isAuthError(bootstrapQuery.error) && instanceUrl) {
-      void recoverFromAuthFailure();
-    }
-
     return (
       <Screen>
         <ErrorStateView
-          title="Dashboard konnte nicht geladen werden"
+          title={t('errorTitle')}
           message={getErrorMessage(bootstrapQuery.error)}
-          actionLabel="Erneut laden"
+          actionLabel={t('retryLabel')}
           onAction={() => void bootstrapQuery.refetch()}
         />
       </Screen>
@@ -55,7 +61,7 @@ export function HomeDashboardScreen({ navigation }: Props) {
   if (!bootstrapQuery.data) {
     return (
       <Screen>
-        <EmptyState title="Keine Daten" description="Die Instanz hat noch keine Bootstrap-Daten geliefert." />
+        <EmptyState title={t('noDataTitle')} description={t('noDataDescription')} />
       </Screen>
     );
   }
@@ -70,7 +76,7 @@ export function HomeDashboardScreen({ navigation }: Props) {
       }
     >
       <View>
-        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>Dashboard</Text>
+        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>{t('title')}</Text>
         <Text style={[styles.subtitle, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
           {instanceUrl}
         </Text>
@@ -79,30 +85,30 @@ export function HomeDashboardScreen({ navigation }: Props) {
       {notice.enabled && notice.markdown ? <NoticeBanner markdown={notice.markdown} /> : null}
 
       <View style={styles.grid}>
-        <MetricCard label="Accounts" value={summary.account_count} />
-        <MetricCard label="Follower gesamt" value={summary.total_followers} tone="accent" />
-        <MetricCard label="Geplante Posts" value={summary.scheduled_posts} />
-        <MetricCard label="Fehlgeschlagene Posts" value={summary.failed_posts} tone="danger" />
+        <MetricCard label={t('accounts')} value={summary.account_count} />
+        <MetricCard label={t('totalFollowers')} value={summary.total_followers} tone="accent" />
+        <MetricCard label={t('scheduledPosts')} value={summary.scheduled_posts} />
+        <MetricCard label={t('failedPosts')} value={summary.failed_posts} tone="danger" />
       </View>
 
       <Card>
-        <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Dein Profil</Text>
+        <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('profileTitle')}</Text>
         <Text style={[styles.profileLine, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
           {user.email}
         </Text>
         <Text style={[styles.profileLine, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-          Sprache: {user.language} | Zeitzone: {user.timezone}
+          {t('profileMeta', { language: user.language, timezone: user.timezone })}
         </Text>
       </Card>
 
       {accounts.length === 0 ? (
         <EmptyState
-          title="Keine verbundenen Accounts"
-          description="Die Instanz ist erreichbar und du bist angemeldet, aber es gibt noch keine verbundenen Fediverse-Accounts."
+          title={t('noAccountsTitle')}
+          description={t('noAccountsDescription')}
         />
       ) : (
         <Card>
-          <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Accounts</Text>
+          <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('accounts')}</Text>
           <View style={styles.accountList}>
             {accounts.map((account) => (
               <View
@@ -116,18 +122,22 @@ export function HomeDashboardScreen({ navigation }: Props) {
                   @{account.username}@{account.instance_url.replace(/^https?:\/\//, '')}
                 </Text>
                 <Text style={[styles.accountMeta, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                  {account.instance_type} | {account.stats_followers} Follower | {account.effective_statuses_count} Posts
+                  {t('accountMeta', {
+                    type: account.instance_type,
+                    followers: account.stats_followers,
+                    posts: account.effective_statuses_count,
+                  })}
                 </Text>
                 {account.auth_error_message ? (
-                  <Text style={styles.errorBadge}>Auth-Fehler: {account.auth_error_message}</Text>
+                  <Text style={styles.errorBadge}>{t('authError', { message: account.auth_error_message })}</Text>
                 ) : null}
                 {account.import_status ? (
                   <Text style={[styles.importBadge, { color: isDark ? palette.accentWarm : palette.accentStrong }]}>
-                    Import: {account.import_status}
+                    {t('importStatus', { status: account.import_status })}
                   </Text>
                 ) : null}
                 <Button
-                  label="Analytics öffnen"
+                  label={t('openAnalytics')}
                   onPress={() => navigation.navigate('AccountDashboard', { accountId: account.id })}
                   variant="secondary"
                 />

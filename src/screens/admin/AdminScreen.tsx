@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDeferredValue, useEffect, useState } from 'react';
-import { Alert, RefreshControl, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { Alert, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { updateAdminNotice } from '../../api/admin';
 import type { AdminUser } from '../../api/types';
@@ -15,7 +15,9 @@ import { useAdminNotice } from '../../hooks/useAdminNotice';
 import { useAdminUsers } from '../../hooks/useAdminUsers';
 import { useAuthRecovery } from '../../hooks/useAuthRecovery';
 import { useBootstrap } from '../../hooks/useBootstrap';
-import { getAdminI18n } from '../../i18n';
+import { useIsDark } from '../../hooks/useIsDark';
+import { useI18n } from '../../i18n';
+import { useAppSettingsStore } from '../../store/appSettingsStore';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useSessionStore } from '../../store/sessionStore';
 import { palette } from '../../theme/colors';
@@ -25,12 +27,13 @@ import { getErrorMessage, isAuthError } from '../../utils/error';
 const ADMIN_USERS_PAGE_SIZE = 20;
 
 export function AdminScreen() {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
   const bootstrapQuery = useBootstrap();
   const instanceUrl = useInstanceStore((state) => state.activeInstanceUrl);
   const token = useSessionStore((state) => state.token);
   const language = useSessionStore((state) => state.language);
-  const { t } = getAdminI18n(language);
+  const appLanguage = useAppSettingsStore((state) => state.language);
+  const { t } = useI18n('admin');
   const queryClient = useQueryClient();
   const recoverFromAuthFailure = useAuthRecovery();
   const [noticeEnabled, setNoticeEnabled] = useState(false);
@@ -184,6 +187,9 @@ export function AdminScreen() {
             <Text style={[styles.previewTitle, { color: isDark ? palette.text : palette.lightText }]}>
               {t('noticePreviewTitle')}
             </Text>
+            <Text style={[styles.previewHint, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
+              Rohtext – Markdown-Formatierung wird beim Anzeigen der Hinweisleiste gerendert.
+            </Text>
             <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
               {noticeMarkdown.trim() ? noticeMarkdown : t('noticePreviewEmpty')}
             </Text>
@@ -230,7 +236,7 @@ export function AdminScreen() {
               })}
             </Text>
             {users.map((user) => (
-              <AdminUserCard key={user.id} user={user} language={language} />
+              <AdminUserCard key={user.id} user={user} language={appLanguage} />
             ))}
             <View style={styles.pagination}>
               <Button
@@ -254,8 +260,8 @@ export function AdminScreen() {
 }
 
 function AdminUserCard({ user, language }: { user: AdminUser; language: string }) {
-  const isDark = useColorScheme() !== 'light';
-  const { t } = getAdminI18n(language);
+  const isDark = useIsDark();
+  const { t } = useI18n('admin');
   const accounts = Array.isArray(user.accounts) ? user.accounts.filter(Boolean) : [];
 
   return (
@@ -338,6 +344,11 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  previewHint: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontStyle: 'italic',
   },
   statusText: {
     fontSize: 13,

@@ -1,13 +1,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 import { loginWithPassword } from '../../api/auth';
 import { Button } from '../../components/Button';
+import { useIsDark } from '../../hooks/useIsDark';
 import { Card } from '../../components/Card';
 import { Screen } from '../../components/Screen';
 import { TextField } from '../../components/TextField';
+import { useI18n } from '../../i18n';
 import type { AuthStackParamList } from '../../navigation/types';
 import { useInstanceStore } from '../../store/instanceStore';
 import { useSessionStore } from '../../store/sessionStore';
@@ -19,7 +21,8 @@ import { saveTokenForInstance } from '../../utils/storage';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
+  const { t } = useI18n('auth');
   const queryClient = useQueryClient();
   const instanceUrl = useInstanceStore((state) => state.activeInstanceUrl);
   const clearActiveInstance = useInstanceStore((state) => state.clearActiveInstance);
@@ -54,7 +57,7 @@ export function LoginScreen({ navigation }: Props) {
       await queryClient.invalidateQueries({ queryKey: ['instance', instanceUrl, 'bootstrap'] });
     },
     onError: (mutationError) => {
-      setError(getErrorMessage(mutationError, 'Login fehlgeschlagen.'));
+      setError(getErrorMessage(mutationError, t('loginError')));
     },
   });
 
@@ -68,12 +71,12 @@ export function LoginScreen({ navigation }: Props) {
   return (
     <Screen
       scrollable
-      footer={<Button label="Einloggen" onPress={() => loginMutation.mutate()} loading={loginMutation.isPending} />}
+      footer={<Button label={t('loginButton')} onPress={() => loginMutation.mutate()} loading={loginMutation.isPending} />}
     >
       <View style={styles.hero}>
-        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>Mit deiner Instanz anmelden</Text>
+        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>{t('title')}</Text>
         <Text style={[styles.subtitle, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-          Du meldest dich direkt bei <Text style={styles.instance}>{instanceUrl}</Text> an.
+          {t('subtitle', { instance: instanceUrl ?? '' })}
         </Text>
       </View>
 
@@ -82,7 +85,7 @@ export function LoginScreen({ navigation }: Props) {
           autoCapitalize="none"
           autoCorrect={false}
           keyboardType="email-address"
-          label="Login / E-Mail"
+          label={t('loginLabel')}
           placeholder="user@example.org"
           value={identifier}
           onChangeText={(value) => {
@@ -93,7 +96,7 @@ export function LoginScreen({ navigation }: Props) {
         />
         <TextField
           secureTextEntry
-          label="Passwort"
+          label={t('passwordLabel')}
           placeholder="••••••••"
           value={password}
           onChangeText={(value) => {
@@ -103,7 +106,7 @@ export function LoginScreen({ navigation }: Props) {
         />
       </Card>
 
-      <Button label="Instanz wechseln" onPress={handleBack} variant="secondary" />
+      <Button label={t('switchInstance')} onPress={handleBack} variant="secondary" />
     </Screen>
   );
 }
@@ -121,8 +124,5 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
-  },
-  instance: {
-    fontWeight: '700',
   },
 });

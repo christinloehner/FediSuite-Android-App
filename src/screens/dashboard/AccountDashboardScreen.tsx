@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useColorScheme,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -23,6 +22,9 @@ import { SimpleBarChart } from '../../components/SimpleBarChart';
 import { useAccountDashboard } from '../../hooks/useAccountDashboard';
 import { useAuthRecovery } from '../../hooks/useAuthRecovery';
 import { useBootstrap } from '../../hooks/useBootstrap';
+import { useIsDark } from '../../hooks/useIsDark';
+import { useI18n, getI18n } from '../../i18n';
+import { useAppSettingsStore } from '../../store/appSettingsStore';
 import type { DashboardStackParamList } from '../../navigation/types';
 import { palette } from '../../theme/colors';
 import { spacing } from '../../theme';
@@ -31,26 +33,6 @@ import { getErrorMessage, isAuthError } from '../../utils/error';
 type Props = NativeStackScreenProps<DashboardStackParamList, 'AccountDashboard'>;
 
 const fallbackPeriods = [7, 30, 90, 365, 730, 0];
-
-function formatPeriod(days: number) {
-  return days === 0 ? 'Alle' : `${days} Tage`;
-}
-
-function firstSentence(value: string | undefined) {
-  if (!value) {
-    return 'Keine zusätzlichen Details vorhanden.';
-  }
-
-  return value.replace(/<[^>]+>/g, '').trim() || 'Keine zusätzlichen Details vorhanden.';
-}
-
-function formatTags(value: string[] | string | undefined) {
-  if (!value) {
-    return 'Unbekannt';
-  }
-
-  return Array.isArray(value) ? value.join(' + ') : value;
-}
 
 function asRecord(value: unknown) {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -66,9 +48,13 @@ function asString(value: unknown) {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
-function weekdayLabel(day: number) {
-  const labels = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-  return labels[day] ?? `Tag ${day}`;
+function asArray<T>(value: T[] | undefined | null) {
+  return Array.isArray(value) ? value : [];
+}
+
+function compactNumber(value: number | undefined) {
+  const numeric = typeof value === 'number' && Number.isFinite(value) ? value : 0;
+  return Number.isInteger(numeric) ? `${numeric}` : numeric.toFixed(1);
 }
 
 function shortDateLabel(value: string | undefined) {
@@ -84,94 +70,110 @@ function shortDateLabel(value: string | undefined) {
   return `${date.getDate()}.${date.getMonth() + 1}.`;
 }
 
-function asArray<T>(value: T[] | undefined | null) {
-  return Array.isArray(value) ? value : [];
+function formatTags(value: string[] | string | undefined) {
+  if (!value) {
+    return '';
+  }
+
+  return Array.isArray(value) ? value.join(' + ') : value;
 }
 
-function compactNumber(value: number | undefined) {
-  const numeric = typeof value === 'number' && Number.isFinite(value) ? value : 0;
-  return Number.isInteger(numeric) ? `${numeric}` : numeric.toFixed(1);
+const weekdayKeys = ['weekday0', 'weekday1', 'weekday2', 'weekday3', 'weekday4', 'weekday5', 'weekday6'] as const;
+
+function weekdayLabel(day: number, language: string) {
+  const { t } = getI18n(language, 'accountDashboard');
+  const key = weekdayKeys[day];
+  return key ? t(key) : t('weekdayFallback', { day });
 }
 
-function formatInsightTitle(tip: {
-  id?: string;
-  title?: string;
-}) {
+function getDashboardErrorMessage(error: unknown, language: string) {
+  const { t } = getI18n(language, 'accountDashboard');
+  const message = getErrorMessage(error, t('defaultAnalyticsError'));
+
+  if (/column reference "created_at" is ambiguous/i.test(message)) {
+    return t('sqlAmbiguousError');
+  }
+
+  return message;
+}
+
+function formatInsightTitle(tip: { id?: string; title?: string }, language: string) {
   if (tip.title) {
     return tip.title;
   }
 
+  const { t } = getI18n(language, 'accountDashboard');
+
   switch (tip.id) {
-    case 'hashtag_winner':
-      return 'Starker Hashtag';
-    case 'weekend_peak':
-      return 'Wochenende performt besser';
-    case 'best_time_window':
-      return 'Bestes Zeitfenster';
-    case 'best_weekdays':
-      return 'Starke Wochentage';
-    case 'text_better':
-      return 'Text schlägt Medien';
-    case 'media_better':
-      return 'Medien schlagen Text';
-    case 'hashtag_overload':
-      return 'Viele Hashtags bremsen';
-    case 'winner_format_repeat':
-      return 'Erfolgsformat wiederholen';
-    case 'hashtag_underused':
-      return 'Hashtags werden zu selten genutzt';
-    default:
-      return 'Hinweis';
+    case 'hashtag_winner': return t('insightHashtagWinner');
+    case 'weekend_peak': return t('insightWeekendPeak');
+    case 'best_time_window': return t('insightBestTimeWindow');
+    case 'best_weekdays': return t('insightBestWeekdays');
+    case 'text_better': return t('insightTextBetter');
+    case 'media_better': return t('insightMediaBetter');
+    case 'hashtag_overload': return t('insightHashtagOverload');
+    case 'winner_format_repeat': return t('insightWinnerFormatRepeat');
+    case 'hashtag_underused': return t('insightHashtagUnderused');
+    default: return t('insightDefault');
   }
 }
 
-function formatInsightSummary(tip: {
-  id?: string;
-  summary?: string;
-  reason?: string;
-  evidence?: string[] | string | Record<string, unknown>;
-}) {
-  if (tip.summary) {
-    return tip.summary;
-  }
+function formatInsightSummary(
+  tip: { id?: string; summary?: string; reason?: string; evidence?: string[] | string | Record<string, unknown> },
+  language: string,
+) {
+  if (tip.summary) return tip.summary;
+  if (tip.reason) return tip.reason;
 
-  if (tip.reason) {
-    return tip.reason;
-  }
-
+  const { t } = getI18n(language, 'accountDashboard');
   const evidence = asRecord(tip.evidence);
-  if (!evidence) {
-    return 'Die Instanz hat für diesen Insight noch keine lesbare Beschreibung geliefert.';
-  }
+  if (!evidence) return t('noReadableSummary');
 
   switch (tip.id) {
     case 'hashtag_winner': {
-      const tag = asString(evidence.tag) ?? 'dieser Hashtag';
+      const tag = asString(evidence.tag) ?? 'this hashtag';
       const posts = asNumber(evidence.posts);
       const lift = asNumber(evidence.lift_percent);
       const avg = asNumber(evidence.avg_engagement);
-      return `${tag.startsWith('#') ? tag : `#${tag}`} lag in ${posts ?? 0} Posts im Schnitt bei ${avg ?? 0} Engagement und hebt die Performance um etwa ${lift ?? 0}%.`;
+      return t('insightHashtagWinnerSummary', {
+        tag: tag.startsWith('#') ? tag : `#${tag}`,
+        posts: posts ?? 0,
+        lift: lift ?? 0,
+        avg: avg ?? 0,
+      });
     }
     case 'weekend_peak': {
       const lift = asNumber(evidence.lift_percent);
       const weekendPosts = asNumber(evidence.weekend_posts);
       const weekdayPosts = asNumber(evidence.weekday_posts);
-      return `Wochenend-Posts performen etwa ${lift ?? 0}% besser. Grundlage sind ${weekendPosts ?? 0} Wochenend-Posts gegenüber ${weekdayPosts ?? 0} Werktags-Posts.`;
+      return t('insightWeekendPeakSummary', {
+        lift: lift ?? 0,
+        weekendPosts: weekendPosts ?? 0,
+        weekdayPosts: weekdayPosts ?? 0,
+      });
     }
     case 'best_time_window': {
       const start = asNumber(evidence.start_hour);
       const end = asNumber(evidence.end_hour);
       const lift = asNumber(evidence.lift_percent);
       const sample = asNumber(evidence.sample);
-      return `Zwischen ${start ?? 0}:00 und ${end ?? 0}:00 liegt dein bestes Zeitfenster. In ${sample ?? 0} ausgewerteten Posts lag der Performance-Vorteil bei etwa ${lift ?? 0}%.`;
+      return t('insightBestTimeWindowSummary', {
+        start: start ?? 0,
+        end: end ?? 0,
+        lift: lift ?? 0,
+        sample: sample ?? 0,
+      });
     }
     case 'best_weekdays': {
       const rawDays = Array.isArray(evidence.days) ? evidence.days : [];
-      const days = rawDays.map((value) => asNumber(value)).filter((value): value is number => value !== null);
+      const days = rawDays
+        .map((value) => asNumber(value))
+        .filter((value): value is number => value !== null)
+        .map((day) => weekdayLabel(day, language))
+        .join(` ${t('insightDefault') === 'Hinweis' ? 'und' : 'and'} `);
       const lift = asNumber(evidence.lift_percent);
       const sample = asNumber(evidence.sample);
-      const labels = days.map(weekdayLabel).join(' und ');
-      return `${labels || 'Diese Wochentage'} schneiden besonders gut ab. In ${sample ?? 0} Posts lag der Performance-Vorteil bei etwa ${lift ?? 0}%.`;
+      return t('insightBestWeekdaysSummary', { days: days || '–', lift: lift ?? 0, sample: sample ?? 0 });
     }
     case 'text_better': {
       const lift = asNumber(evidence.lift_percent);
@@ -179,57 +181,68 @@ function formatInsightSummary(tip: {
       const textAvg = asNumber(evidence.text_avg);
       const mediaPosts = asNumber(evidence.media_posts);
       const textPosts = asNumber(evidence.text_posts);
-      return `Text-Posts performen aktuell etwa ${lift ?? 0}% besser als Medien-Posts. Ø Engagement: Text ${textAvg ?? 0}, Medien ${mediaAvg ?? 0} bei ${textPosts ?? 0} Text- und ${mediaPosts ?? 0} Medien-Posts.`;
+      return t('insightTextBetterSummary', {
+        lift: lift ?? 0,
+        mediaAvg: mediaAvg ?? 0,
+        textAvg: textAvg ?? 0,
+        mediaPosts: mediaPosts ?? 0,
+        textPosts: textPosts ?? 0,
+      });
     }
     case 'media_better': {
       const lift = asNumber(evidence.lift_percent);
       const mediaAvg = asNumber(evidence.media_avg);
       const textAvg = asNumber(evidence.text_avg);
-      return `Medien-Posts performen aktuell etwa ${lift ?? 0}% besser als reine Text-Posts. Ø Engagement: Medien ${mediaAvg ?? 0}, Text ${textAvg ?? 0}.`;
+      return t('insightMediaBetterSummary', { lift: lift ?? 0, mediaAvg: mediaAvg ?? 0, textAvg: textAvg ?? 0 });
     }
     case 'hashtag_overload': {
       const avgHashtags = asNumber(evidence.avg_hashtags);
       const taggedPosts = asNumber(evidence.tagged_posts);
-      return `Deine markierten Posts nutzen im Schnitt ${avgHashtags ?? 0} Hashtags. Das wirkt nach Überladung und betrifft ${taggedPosts ?? 0} ausgewertete Posts.`;
+      return t('insightHashtagOverloadSummary', { avgHashtags: avgHashtags ?? 0, taggedPosts: taggedPosts ?? 0 });
     }
     case 'winner_format_repeat': {
       const topShare = asNumber(evidence.top_share_percent);
       const topPosts = asNumber(evidence.top_posts);
-      return `Ein wiederkehrendes Erfolgsformat ist erkennbar: ${topPosts ?? 0} Top-Posts stehen für etwa ${topShare ?? 0}% deiner stärksten Beiträge.`;
+      return t('insightWinnerFormatRepeatSummary', { topPosts: topPosts ?? 0, topShare: topShare ?? 0 });
     }
     case 'hashtag_underused': {
       const coverage = asNumber(evidence.coverage_percent);
       const tagged = asNumber(evidence.tagged_posts);
       const total = asNumber(evidence.total_posts);
-      return `Nur etwa ${coverage ?? 0}% deiner Posts nutzen Hashtags. Das sind ${tagged ?? 0} von ${total ?? 0} Beiträgen und lässt Reichweitenpotenzial liegen.`;
+      return t('insightHashtagUnderusedSummary', { coverage: coverage ?? 0, tagged: tagged ?? 0, total: total ?? 0 });
     }
     default:
-      return 'Die Instanz hat für diesen Insight nur Rohdaten geliefert. Eine lesbare Beschreibung liegt noch nicht vor.';
+      return t('rawDataOnly');
   }
 }
 
-function getDashboardErrorMessage(error: unknown) {
-  const message = getErrorMessage(error, 'Die Analytics-Daten konnten nicht geladen werden.');
-
-  if (/column reference "created_at" is ambiguous/i.test(message)) {
-    return 'Die Instanz hat das Analytics-Dashboard mit einem Serverfehler beantwortet. Die SQL-Abfrage auf dem Server verwendet die Spalte "created_at" derzeit nicht eindeutig. Die App funktioniert, aber dieser Analytics-Endpunkt muss serverseitig korrigiert werden.';
-  }
-
-  return message;
+function firstSentence(value: string | undefined, language: string) {
+  const { t } = getI18n(language, 'accountDashboard');
+  if (!value) return t('noDetails');
+  return value.replace(/<[^>]+>/g, '').trim() || t('noDetails');
 }
 
 export function AccountDashboardScreen({ navigation, route }: Props) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
+  const { t } = useI18n('accountDashboard');
+  const appLanguage = useAppSettingsStore((state) => state.language);
   const bootstrapQuery = useBootstrap();
   const recoverFromAuthFailure = useAuthRecovery();
   const accounts = bootstrapQuery.data?.accounts ?? [];
-  const initialAccountId = route.params?.accountId ?? bootstrapQuery.data?.user.default_account_id ?? accounts[0]?.id ?? null;
-  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(initialAccountId);
+  const resolvedInitialAccountId = route.params?.accountId ?? bootstrapQuery.data?.user.default_account_id ?? accounts[0]?.id ?? null;
+  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(resolvedInitialAccountId);
   const [selectedDays, setSelectedDays] = useState(30);
   const dashboardQuery = useAccountDashboard({
     accountId: selectedAccountId,
     days: selectedDays,
   });
+
+  useEffect(() => {
+    if (selectedAccountId === null && resolvedInitialAccountId !== null) {
+      setSelectedAccountId(resolvedInitialAccountId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedInitialAccountId]);
 
   useEffect(() => {
     if (dashboardQuery.error && isAuthError(dashboardQuery.error)) {
@@ -245,7 +258,7 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
   if (bootstrapQuery.isLoading && accounts.length === 0) {
     return (
       <Screen>
-        <LoadingView label="Accounts werden geladen..." />
+        <LoadingView label={t('loadingAccounts')} />
       </Screen>
     );
   }
@@ -254,8 +267,8 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
     return (
       <Screen>
         <EmptyState
-          title="Keine Accounts für Analytics"
-          description="Verbinde zuerst mindestens einen Fediverse-Account, bevor du das mobile Analytics-Dashboard aufrufst."
+          title={t('noAccountsTitle')}
+          description={t('noAccountsDescription')}
         />
       </Screen>
     );
@@ -286,18 +299,18 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
       }
     >
       <View style={styles.topBar}>
-        <Button label="Zurück" onPress={() => navigation.goBack()} variant="secondary" />
+        <Button label={t('goBack')} onPress={() => navigation.goBack()} variant="secondary" />
       </View>
 
       <View>
-        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>Account Dashboard</Text>
+        <Text style={[styles.title, { color: isDark ? palette.text : palette.lightText }]}>{t('title')}</Text>
         <Text style={[styles.subtitle, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-          Mobile Analytics aus einem Bundle-Endpunkt
+          {t('subtitle')}
         </Text>
       </View>
 
       <Card>
-        <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Account wählen</Text>
+        <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('selectAccount')}</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={styles.chipRow}>
             {accounts.map((account) => (
@@ -313,12 +326,12 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
       </Card>
 
       <Card>
-        <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Zeitraum</Text>
+        <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('periodTitle')}</Text>
         <View style={styles.periodWrap}>
           {availablePeriods.map((days) => (
             <Chip
               key={days}
-              label={formatPeriod(days)}
+              label={days === 0 ? t('allPeriod') : t('daysPeriod', { days })}
               active={selectedDays === days}
               onPress={() => setSelectedDays(days)}
             />
@@ -335,76 +348,76 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
             @{selectedAccount.username}@{selectedAccount.instance_url.replace(/^https?:\/\//, '')}
           </Text>
           <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-            {selectedAccount.instance_type} | Indexierte Posts: {selectedAccount.indexed_posts_count} | Effektive Posts: {selectedAccount.effective_statuses_count}
+            {selectedAccount.instance_type} | {t('indexedPosts', { count: selectedAccount.indexed_posts_count })} | {t('effectivePosts', { count: selectedAccount.effective_statuses_count })}
           </Text>
           {selectedAccount.auth_error_message ? (
-            <Text style={styles.errorText}>Auth-Fehler: {selectedAccount.auth_error_message}</Text>
+            <Text style={styles.errorText}>{t('authError', { message: selectedAccount.auth_error_message })}</Text>
           ) : null}
         </Card>
       ) : null}
 
       {dashboardQuery.isLoading ? (
-        <LoadingView label="Analytics werden geladen..." />
+        <LoadingView label={t('loadingAnalytics')} />
       ) : dashboardQuery.error ? (
         <ErrorStateView
-          title="Analytics konnten nicht geladen werden"
-          message={getDashboardErrorMessage(dashboardQuery.error)}
-          actionLabel="Erneut laden"
+          title={t('errorTitle')}
+          message={getDashboardErrorMessage(dashboardQuery.error, appLanguage)}
+          actionLabel={t('retryLabel')}
           onAction={() => void dashboardQuery.refetch()}
         />
       ) : !dashboardQuery.data ? (
-        <EmptyState title="Keine Analytics-Daten" description="Die Instanz hat noch keine Dashboard-Daten zurückgegeben." />
+        <EmptyState title={t('noAnalyticsTitle')} description={t('noAnalyticsDescription')} />
       ) : (
         <>
           <View style={styles.grid}>
-            <MetricCard label="Follower" value={dashboardQuery.data.summary.followers} />
-            <MetricCard label="Following" value={dashboardQuery.data.summary.following} />
-            <MetricCard label="Posts im Zeitraum" value={dashboardQuery.data.summary.posts_in_period} tone="accent" />
-            <MetricCard label="Engagement gesamt" value={dashboardQuery.data.summary.total_engagement} tone="accent" />
-            <MetricCard label="Ø Engagement" value={dashboardQuery.data.summary.avg_engagement_per_post.toFixed(1)} />
-            <MetricCard label="Fehlgeschlagene Posts" value={dashboardQuery.data.summary.failed_posts_count} tone="danger" />
+            <MetricCard label={t('metricFollowers')} value={dashboardQuery.data.summary.followers} />
+            <MetricCard label={t('metricFollowing')} value={dashboardQuery.data.summary.following} />
+            <MetricCard label={t('metricPostsInPeriod')} value={dashboardQuery.data.summary.posts_in_period} tone="accent" />
+            <MetricCard label={t('metricTotalEngagement')} value={dashboardQuery.data.summary.total_engagement} tone="accent" />
+            <MetricCard label={t('metricAvgEngagement')} value={dashboardQuery.data.summary.avg_engagement_per_post.toFixed(1)} />
+            <MetricCard label={t('metricFailedPosts')} value={dashboardQuery.data.summary.failed_posts_count} tone="danger" />
           </View>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Posting-Aktivität</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('postingActivity')}</Text>
             <SimpleBarChart
-              emptyLabel="Keine Tagesdaten vorhanden."
+              emptyLabel={t('emptyDailyStats')}
               data={dailyStats.map((entry) => ({
                 label: shortDateLabel(entry.date),
                 value: entry.posts_count ?? 0,
-                detail: `${(entry.total_favourites ?? 0) + (entry.total_reblogs ?? 0) + (entry.total_replies ?? 0)} Eng.`,
+                detail: t('engShort', { count: (entry.total_favourites ?? 0) + (entry.total_reblogs ?? 0) + (entry.total_replies ?? 0) }),
               }))}
             />
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Engagement-Verlauf</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('engagementHistory')}</Text>
             <SimpleBarChart
-              emptyLabel="Keine Engagement-Daten vorhanden."
+              emptyLabel={t('emptyEngagement')}
               data={engagementRate.map((entry) => ({
                 label: shortDateLabel(entry.date),
                 value: entry.engagement_rate ?? 0,
-                detail: `${entry.posts_count ?? 0} Posts`,
+                detail: t('postCount', { count: entry.posts_count ?? 0 }),
               }))}
             />
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Follower-Historie</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('followerHistory')}</Text>
             <SimpleBarChart
-              emptyLabel="Keine Historie vorhanden."
+              emptyLabel={t('emptyHistory')}
               data={statsHistory.map((entry) => ({
                 label: shortDateLabel(entry.recorded_at),
                 value: entry.followers ?? 0,
-                detail: `Folgt ${entry.following ?? 0}`,
+                detail: t('following', { count: entry.following ?? 0 }),
               }))}
             />
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Beste Zeiten</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('bestTimes')}</Text>
             <HeatmapGrid
-              emptyLabel="Keine Heatmap-Daten vorhanden."
+              emptyLabel={t('emptyHeatmap')}
               data={bestTimes.map((entry) => ({
                 day: entry.day_of_week ?? 0,
                 hour: entry.hour ?? 0,
@@ -414,31 +427,35 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Wochentage</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('weekdays')}</Text>
             <HorizontalBarList
-              emptyLabel="Keine Wochentagsdaten vorhanden."
+              emptyLabel={t('emptyWeekdays')}
               data={weekdayEngagement.map((entry) => ({
-                label: weekdayLabel(entry.day_of_week ?? -1),
+                label: weekdayLabel(entry.day_of_week ?? -1, appLanguage),
                 value: entry.avg_engagement ?? 0,
-                meta: `${entry.post_count ?? 0} Posts`,
+                meta: t('postCount', { count: entry.post_count ?? 0 }),
               }))}
             />
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Top Posts</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('topPostsTitle')}</Text>
             {dashboardQuery.data.top_posts.items.length === 0 ? (
               <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                Für diesen Zeitraum gibt es noch keine Top-Posts.
+                {t('noTopPosts')}
               </Text>
             ) : (
               dashboardQuery.data.top_posts.items.slice(0, 5).map((post, index) => (
                 <View key={`${post.id ?? index}`} style={styles.listItem}>
                   <Text style={[styles.listTitle, { color: isDark ? palette.text : palette.lightText }]}>
-                    {firstSentence(post.content)}
+                    {firstSentence(post.content, appLanguage)}
                   </Text>
                   <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                    Engagement {post.total_engagement ?? 0} | Sichtbarkeit {post.visibility ?? 'unbekannt'} | Medien {post.has_media ? 'ja' : 'nein'}
+                    {t('topPostMeta', {
+                      eng: post.total_engagement ?? 0,
+                      vis: post.visibility ?? t('unknown'),
+                      media: post.has_media ? t('yes') : t('no'),
+                    })}
                   </Text>
                 </View>
               ))
@@ -446,106 +463,124 @@ export function AccountDashboardScreen({ navigation, route }: Props) {
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Medien vs. Text</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('mediaVsText')}</Text>
             <View style={styles.grid}>
-              <MetricCard label="Medien-Posts" value={mediaRow?.post_count ?? 0} tone="accent" />
-              <MetricCard label="Text-Posts" value={textRow?.post_count ?? 0} />
-              <MetricCard label="Ø Medien-Engagement" value={compactNumber(mediaRow?.avg_engagement)} tone="accent" />
-              <MetricCard label="Ø Text-Engagement" value={compactNumber(textRow?.avg_engagement)} />
+              <MetricCard label={t('mediaPosts')} value={mediaRow?.post_count ?? 0} tone="accent" />
+              <MetricCard label={t('textPosts')} value={textRow?.post_count ?? 0} />
+              <MetricCard label={t('avgMediaEngagement')} value={compactNumber(mediaRow?.avg_engagement)} tone="accent" />
+              <MetricCard label={t('avgTextEngagement')} value={compactNumber(textRow?.avg_engagement)} />
             </View>
             <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Ø Favoriten: Medien {compactNumber(mediaRow?.avg_favourites)} | Text {compactNumber(textRow?.avg_favourites)}
+              {t('avgFavourites', {
+                media: compactNumber(mediaRow?.avg_favourites),
+                text: compactNumber(textRow?.avg_favourites),
+              })}
             </Text>
             <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Ø Boosts: Medien {compactNumber(mediaRow?.avg_boosts)} | Text {compactNumber(textRow?.avg_boosts)}
+              {t('avgBoosts', {
+                media: compactNumber(mediaRow?.avg_boosts),
+                text: compactNumber(textRow?.avg_boosts),
+              })}
             </Text>
             <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Ø Replies: Medien {compactNumber(mediaRow?.avg_replies)} | Text {compactNumber(textRow?.avg_replies)}
+              {t('avgReplies', {
+                media: compactNumber(mediaRow?.avg_replies),
+                text: compactNumber(textRow?.avg_replies),
+              })}
             </Text>
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Sichtbarkeit</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('visibilityTitle')}</Text>
             <HorizontalBarList
-              emptyLabel="Keine Sichtbarkeitsdaten vorhanden."
+              emptyLabel={t('emptyVisibility')}
               data={visibilityBreakdown.map((entry) => ({
-                label: entry.visibility ?? 'unbekannt',
+                label: entry.visibility ?? t('unknown'),
                 value: entry.post_count ?? entry.count ?? 0,
               }))}
             />
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Hashtags</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('hashtagsTitle')}</Text>
             <View style={styles.grid}>
-              <MetricCard label="Posts mit Hashtags" value={hashtagOverview?.posts_with_hashtags ?? 0} tone="accent" />
-              <MetricCard label="Posts ohne Hashtags" value={hashtagOverview?.posts_without_hashtags ?? 0} />
-              <MetricCard label="Unique Hashtags" value={hashtagOverview?.unique_hashtags ?? 0} tone="accent" />
-              <MetricCard label="Hashtag Uses" value={hashtagOverview?.hashtag_uses ?? 0} />
+              <MetricCard label={t('postsWithHashtags')} value={hashtagOverview?.posts_with_hashtags ?? 0} tone="accent" />
+              <MetricCard label={t('postsWithoutHashtags')} value={hashtagOverview?.posts_without_hashtags ?? 0} />
+              <MetricCard label={t('uniqueHashtags')} value={hashtagOverview?.unique_hashtags ?? 0} tone="accent" />
+              <MetricCard label={t('hashtagUses')} value={hashtagOverview?.hashtag_uses ?? 0} />
             </View>
             <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-              Ø pro Post: {compactNumber(hashtagOverview?.avg_hashtags_per_post)} | Ø pro markiertem Post:{' '}
-              {compactNumber(hashtagOverview?.avg_hashtags_per_tagged_post)}
+              {t('avgHashtagsPerPost', {
+                avg: compactNumber(hashtagOverview?.avg_hashtags_per_post),
+                avgTagged: compactNumber(hashtagOverview?.avg_hashtags_per_tagged_post),
+              })}
             </Text>
             <SimpleBarChart
-              emptyLabel="Keine Hashtag-Leistungsdaten vorhanden."
+              emptyLabel={t('emptyHashtags')}
               data={topHashtags.slice(0, 5).map((tag) => ({
-                label: `#${tag.tag ?? 'unbekannt'}`,
+                label: `#${tag.tag ?? t('unknown')}`,
                 value: tag.avg_engagement ?? 0,
-                detail: `${tag.posts_count ?? 0} Posts`,
+                detail: t('postCount', { count: tag.posts_count ?? 0 }),
               }))}
             />
             {topHashtags.slice(0, 5).map((tag, index) => (
               <View key={`${tag.tag ?? index}`} style={styles.listItem}>
                 <Text style={[styles.listTitle, { color: isDark ? palette.text : palette.lightText }]}>
-                  #{tag.tag ?? 'unbekannt'}
+                  #{tag.tag ?? t('unknown')}
                 </Text>
                 <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                  Posts {tag.posts_count ?? 0} | Engagement {tag.total_engagement ?? 0} | Ø {tag.avg_engagement ?? 0}
-                </Text>
-                <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                  Boost-Rate {compactNumber(tag.boost_rate)}% | Reply-Rate {compactNumber(tag.reply_rate)}%
+                  {t('hashtagComboMeta', {
+                    posts: tag.posts_count ?? 0,
+                    eng: tag.total_engagement ?? 0,
+                    avg: tag.avg_engagement ?? 0,
+                  })}
                 </Text>
               </View>
             ))}
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Hashtag-Kombinationen</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('hashtagCombinationsTitle')}</Text>
             {hashtagCombinations.length === 0 ? (
               <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                Noch keine Hashtag-Kombinationen gefunden.
+                {t('noHashtagCombinations')}
               </Text>
             ) : null}
             {hashtagCombinations.slice(0, 5).map((combo, index) => (
               <View key={`${combo.tag_a ?? 'tag'}-${combo.tag_b ?? 'tag'}-${index}`} style={styles.listItem}>
                 <Text style={[styles.listTitle, { color: isDark ? palette.text : palette.lightText }]}>
-                  {combo.tag_a || combo.tag_b ? `#${combo.tag_a ?? 'unbekannt'} + #${combo.tag_b ?? 'unbekannt'}` : formatTags(combo.tags)}
+                  {combo.tag_a || combo.tag_b
+                    ? `#${combo.tag_a ?? t('unknown')} + #${combo.tag_b ?? t('unknown')}`
+                    : formatTags(combo.tags)}
                 </Text>
                 <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                  Posts {combo.posts_count ?? 0} | Engagement {combo.total_engagement ?? 0} | Ø {combo.avg_engagement ?? 0}
+                  {t('hashtagComboMeta', {
+                    posts: combo.posts_count ?? 0,
+                    eng: combo.total_engagement ?? 0,
+                    avg: combo.avg_engagement ?? 0,
+                  })}
                 </Text>
               </View>
             ))}
           </Card>
 
           <Card>
-            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>Insights und Tipps</Text>
+            <Text style={[styles.sectionTitle, { color: isDark ? palette.text : palette.lightText }]}>{t('insightsTitle')}</Text>
             {(dashboardQuery.data.insights.tips ?? []).length === 0 ? (
               <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                Noch nicht genug Daten für automatisierte Tipps.
+                {t('noInsights')}
               </Text>
             ) : (
               dashboardQuery.data.insights.tips?.map((tip, index) => (
                 <View key={`${tip.title ?? index}`} style={styles.listItem}>
                   <Text style={[styles.listTitle, { color: isDark ? palette.text : palette.lightText }]}>
-                    {formatInsightTitle(tip)}
+                    {formatInsightTitle(tip, appLanguage)}
                   </Text>
                   <Text style={[styles.confidence, { color: isDark ? palette.accentWarm : palette.accentStrong }]}>
                     {tip.confidence ?? 'medium'}
                   </Text>
                   <Text style={[styles.body, { color: isDark ? palette.textMuted : palette.lightTextMuted }]}>
-                    {formatInsightSummary(tip)}
+                    {formatInsightSummary(tip, appLanguage)}
                   </Text>
                 </View>
               ))

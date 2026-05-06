@@ -1,5 +1,6 @@
-import { StyleSheet, Text, View, useColorScheme } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
+import { useIsDark } from '../hooks/useIsDark';
 import { palette } from '../theme/colors';
 import { spacing } from '../theme';
 
@@ -18,7 +19,7 @@ export function HeatmapGrid({
   data: Slot[];
   emptyLabel: string;
 }) {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
   const normalizedData = data.map((item) => ({
     ...item,
     value: toNumber(item.value),

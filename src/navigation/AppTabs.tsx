@@ -1,5 +1,5 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text, useColorScheme } from 'react-native';
+import { Text } from 'react-native';
 
 import type { AppTabsParamList } from './types';
 import { DashboardStackNavigator } from './DashboardStackNavigator';
@@ -10,11 +10,12 @@ import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { AdminScreen } from '../screens/admin/AdminScreen';
 import { fedisuiteDarkTheme, fedisuiteLightTheme } from '../theme';
 import { useBootstrap } from '../hooks/useBootstrap';
+import { useIsDark } from '../hooks/useIsDark';
 
 const Tab = createBottomTabNavigator<AppTabsParamList>();
 
 export function AppTabs() {
-  const isDark = useColorScheme() !== 'light';
+  const isDark = useIsDark();
   const theme = isDark ? fedisuiteDarkTheme : fedisuiteLightTheme;
   const bootstrapQuery = useBootstrap();
   const showAdmin = Boolean(bootstrapQuery.data?.user.is_admin);
