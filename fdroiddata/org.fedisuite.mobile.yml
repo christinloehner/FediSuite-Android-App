@@ -32,7 +32,7 @@ Builds:
       - sed -i '/org.gradle.java.home/d' gradle.properties
       - echo "org.gradle.java.home=/usr/lib/jvm/java-21-openjdk-amd64" >> gradle.properties
       - sed -i '/jvmToolchain/s/17/21/g' ../node_modules/@react-native/gradle-plugin/*/build.gradle.kts
-      - sed -i
+      - sed -i 
         's/project.kotlinExtension.jvmToolchain(17)/project.kotlinExtension.jvmToolchain(21)/g'
         ../node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/JdkConfiguratorUtils.kt
       - cd ..
