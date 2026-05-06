@@ -19,10 +19,17 @@ Builds:
     sudo:
       - sysctl fs.inotify.max_user_watches=524288 || true
       - apt-get update
-      - apt-get install -y npm
+      - apt-get install -y openjdk-17-jdk-headless curl xz-utils
+      - update-alternatives --auto java
+      - update-alternatives --auto javac
+      - curl -Lo node.tar.xz https://nodejs.org/dist/v20.19.4/node-v20.19.4-linux-x64.tar.xz
+      - echo "7a488a09e2fc02fbd1bc4ae084bea8a589314f741c182fc02c5f3f07c79a29d4 node.tar.xz" | sha256sum -c -
+      - tar xJf node.tar.xz --strip-components=1 -C /usr/local/
     gradle:
       - yes
     prebuild:
+      - sed -i '/org.gradle.java.home/d' gradle.properties
+      - echo "org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64" >> gradle.properties
       - cd ..
       - npm ci
     scandelete:

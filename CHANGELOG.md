@@ -15,6 +15,7 @@ All notable changes to this project are documented in this file.
 ### Fixed
 
 - Fixed Fastlane changelog numbering so the current release metadata now follows the real Android `versionCode` instead of a stale `1.txt` placeholder. (#3)
+- Fixed the F-Droid builder metadata for the React-Native/Gradle toolchain by explicitly provisioning OpenJDK 17, wiring `org.gradle.java.home` for the Android subproject and pinning Node.js `20.19.4` so the F-Droid build no longer depends on an insufficient default Java or Node installation. (#3)
 
 ## v0.9.12
 
