@@ -22,12 +22,12 @@ Builds:
     gradle:
       - yes
     prebuild:
-      - sed -i '/org.gradle.java.home/d' gradle.properties
-      - sed -i '/jvmToolchain/s/17/21/g' ../node_modules/@react-native/gradle-plugin/*/build.gradle.kts
+      - sed -i '/org.gradle.java.home/d' ../gradle.properties
+      - sed -i '/jvmToolchain/s/17/21/g' ../../node_modules/@react-native/gradle-plugin/*/build.gradle.kts
       - sed -i 
         's/project.kotlinExtension.jvmToolchain(17)/project.kotlinExtension.jvmToolchain(21)/g'
-        ../node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/JdkConfiguratorUtils.kt
-      - cd ..
+        ../../node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/JdkConfiguratorUtils.kt
+      - cd ../..
       - npm ci
     scandelete:
       - node_modules
