@@ -1,0 +1,29 @@
+FediSuite e un client mobile per la piattaforma FediSuite dedicata alla gestione degli account Fediverse.
+
+L'app puo collegarsi all'istanza FediSuite ufficiale ospitata su app.fedisuite.com oppure a una tua istanza FediSuite self-hosted.
+
+Con l'app Android puoi:
+
+- collegarti a un'istanza FediSuite a tua scelta
+- accedere in modo sicuro con sessioni legate alla singola istanza
+- visualizzare la dashboard mobile e i riepiloghi degli account
+- controllare analisi e insight degli account
+- gestire la coda dei post programmati, pubblicati, non riusciti e in bozza
+- creare nuovi post, programmarli o pubblicarli subito
+- allegare media e aggiungere testi alternativi prima della pubblicazione
+- gestire gli account Fediverse collegati
+- scollegare gli account direttamente dall'app
+- regolare lingua e tema
+- aggiornare preferenze mobili e impostazioni dell'account predefinito
+- usare un'area admin per avvisi e utenti registrati se il tuo account FediSuite dispone dei permessi admin
+
+L'app e progettata come una vera esperienza mobile:
+
+- navigazione pensata per il tocco
+- bottom tab
+- card dashboard compatte
+- supporto per tema scuro, chiaro e di sistema
+- localizzazione dell'app in inglese, tedesco e italiano
+- stati di caricamento, errore e vuoto chiari
+
+FediSuite segue l'idea di un hub centrale per gestire piu servizi e account del Fediverse senza vincolare gli utenti a un unico backend fisso. Per questo l'app resta deliberatamente basata sulle istanze.

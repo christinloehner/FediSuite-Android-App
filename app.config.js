@@ -1,17 +1,7 @@
-const fs = require('fs');
-const path = require('path');
+const { FALLBACK_VERSION, readVersionFile, versionCodeFromVersion } = require('./scripts/versioning');
 
-function readVersionFile(fallback) {
-  const versionPath = path.join(__dirname, 'version');
-
-  if (!fs.existsSync(versionPath)) {
-    return fallback;
-  }
-
-  return fs.readFileSync(versionPath, 'utf8').trim() || fallback;
-}
-
-const appVersion = readVersionFile('1.0.0');
+const appVersion = readVersionFile(__dirname, FALLBACK_VERSION);
+const appVersionCode = versionCodeFromVersion(appVersion);
 
 module.exports = {
   expo: {
@@ -32,6 +22,7 @@ module.exports = {
     },
     android: {
       package: 'org.fedisuite.mobile',
+      versionCode: appVersionCode,
       adaptiveIcon: {
         backgroundColor: '#0B1220',
         foregroundImage: './assets/android-icon-foreground.png',
@@ -49,6 +40,7 @@ module.exports = {
     },
     extra: {
       appVersion,
+      appVersionCode,
     },
   },
 };

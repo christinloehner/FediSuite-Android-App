@@ -10,15 +10,20 @@ With the Android app you can:
 - inspect account analytics and insights
 - manage your queue of scheduled, published, failed and draft posts
 - create new posts, schedule them or publish them immediately
+- attach media and add alt text before publishing
 - manage connected Fediverse accounts
-- adjust language, theme, timezone and default account settings
+- disconnect accounts directly from the app
+- adjust language and theme preferences
+- update your mobile preferences and default account settings
+- access an admin area for notices and registered users when your FediSuite account has admin permissions
 
 The app is designed as a real mobile experience:
 
 - touch-first navigation
 - bottom tabs
 - compact dashboard cards
-- dark-mode-first UI
+- dark, light and system theme support
+- English, German and Italian app localization
 - explicit loading, error and empty states
 
 FediSuite supports the idea of one central management hub for multiple Fediverse services and accounts while still keeping the app instance-based instead of locking users into one hardcoded backend.

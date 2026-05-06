@@ -1,1 +1,1 @@
-Manage, schedule and analyze your Fediverse accounts with FediSuite on Android.
+Manage and analyze Fediverse accounts on hosted or self-hosted FediSuite
