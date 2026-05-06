@@ -13,7 +13,7 @@ Repo: https://github.com/christinloehner/FediSuite-Android-App.git
 Builds:
   - versionName: 0.9.13
     versionCode: 913
-    commit: v0.9.13
+    commit: 6a2ff7947a701e1aaab2dac5a396b83342480d5e
     subdir: android/app
     sudo:
       - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
@@ -40,7 +40,7 @@ Builds:
     scandelete:
       - node_modules
 
-AutoUpdateMode: None
-UpdateCheckMode: Static
+AutoUpdateMode: Version v%v
+UpdateCheckMode: Tags
 CurrentVersion: 0.9.13
 CurrentVersionCode: 913
