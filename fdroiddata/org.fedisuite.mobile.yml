@@ -15,22 +15,14 @@ Builds:
   - versionName: "0.9.13"
     versionCode: 913
     commit: v0.9.13
-    subdir: android
+    subdir: app
     sudo:
-      - sysctl fs.inotify.max_user_watches=524288 || true
       - apt-get update
-      - apt-get install -y openjdk-21-jdk-headless curl xz-utils
-      - update-alternatives --auto java
-      - update-alternatives --auto javac
-      - curl -Lo node.tar.xz https://nodejs.org/dist/v20.19.4/node-v20.19.4-linux-x64.tar.xz
-      - echo "7a488a09e2fc02fbd1bc4ae084bea8a589314f741c182fc02c5f3f07c79a29d4 node.tar.xz"
-        | sha256sum -c -
-      - tar xJf node.tar.xz --strip-components=1 -C /usr/local/
+      - apt-get install -y npm
     gradle:
       - yes
     prebuild:
       - sed -i '/org.gradle.java.home/d' gradle.properties
-      - echo "org.gradle.java.home=/usr/lib/jvm/java-21-openjdk-amd64" >> gradle.properties
       - sed -i '/jvmToolchain/s/17/21/g' ../node_modules/@react-native/gradle-plugin/*/build.gradle.kts
       - sed -i 
         's/project.kotlinExtension.jvmToolchain(17)/project.kotlinExtension.jvmToolchain(21)/g'
@@ -40,6 +32,6 @@ Builds:
     scandelete:
       - node_modules
 
-UpdateCheckMode: Static
+UpdateCheckMode: HTTP
 CurrentVersion: "0.9.13"
 CurrentVersionCode: 913
