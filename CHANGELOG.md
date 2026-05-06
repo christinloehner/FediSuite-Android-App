@@ -2,6 +2,18 @@
 
 All notable changes to this project are documented in this file.
 
+## v0.9.12
+
+### Added
+
+- Added English language support. Switching to English in Settings now updates the entire app UI immediately, including all screens, tabs and error messages. (#3)
+- Added a local app settings store persisted via AsyncStorage for language and theme preferences so these settings stay on-device and are no longer sent to the FediSuite API. (#3)
+- Added a Light theme option to Settings. The app now supports System, Dark and Light mode selection that applies instantly across the whole UI. (#3)
+
+### Fixed
+
+- Fixed light and dark mode switching so the selected theme is now respected by all UI components instead of leaving most components in dark mode because they read the system color scheme directly. (#3)
+
 ## v0.9.11
 
 ### Added

@@ -1,9 +1,6 @@
-Initial public Android release.
+Version 0.9.12
 
-- instance-based login flow
-- secure token storage
-- mobile dashboard and account analytics
-- queue management
-- composer with scheduling and media support
-- accounts overview
-- settings and admin-aware navigation
+- added English app localization across screens, tabs and error states
+- added persistent app-only language and theme settings
+- added light theme support alongside dark and system mode
+- fixed theme switching so all core UI components now respect the selected mode
