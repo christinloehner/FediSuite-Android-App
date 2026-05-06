@@ -12,6 +12,7 @@ All notable changes to this project are documented in this file.
 - Added a deterministic Android and F-Droid `versionCode` strategy derived from the repository `version` file so each release now gets a monotonic numeric build version instead of a constant `1`. (#3)
 - Added localized Fastlane metadata for German and Italian plus a repository-local `.fdroid.yml` to make the app metadata and release tracking more F-Droid-friendly. (#3)
 - Added explicit repository documentation for the licensing and redistribution rights of the FediSuite branding, screenshots and store assets used in the app and Fastlane metadata. (#3)
+- Added a concrete `fdroiddata` metadata template for `org.fedisuite.mobile` plus a repository-local submission guide covering the current F-Droid merge-request workflow. (#3)
 
 ### Fixed
 

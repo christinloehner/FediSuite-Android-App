@@ -325,6 +325,14 @@ This keeps release tags, Fastlane changelogs and Android upgrade paths aligned.
 - Self-hosting repository: [https://github.com/christinloehner/FediSuite](https://github.com/christinloehner/FediSuite)
 - Main source/build repository for the full application stack: [https://github.com/christinloehner/FediSuite-Docker-Image](https://github.com/christinloehner/FediSuite-Docker-Image)
 
+## F-Droid
+
+Vorbereitete Dateien fuer die Einreichung in das offizielle F-Droid-Repository:
+
+- repo-lokale Build-Metadaten: `.fdroid.yml`
+- konkrete `fdroiddata`-Vorlage: `fdroiddata/org.fedisuite.mobile.yml`
+- Ablaufbeschreibung: `docs/fdroid-submission.md`
+
 ## Notes
 
 - The app is close to production shape, but parts of the backend may still evolve.
