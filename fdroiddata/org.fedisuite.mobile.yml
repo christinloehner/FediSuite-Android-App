@@ -15,7 +15,7 @@ Builds:
   - versionName: "0.9.13"
     versionCode: 913
     commit: v0.9.13
-    subdir: app
+    subdir: android/app
     sudo:
       - apt-get update
       - apt-get install -y npm
