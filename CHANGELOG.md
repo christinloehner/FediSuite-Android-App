@@ -13,6 +13,7 @@ All notable changes to this project are documented in this file.
 - Added localized Fastlane metadata for German and Italian plus a repository-local `.fdroid.yml` to make the app metadata and release tracking more F-Droid-friendly. (#3)
 - Added explicit repository documentation for the licensing and redistribution rights of the FediSuite branding, screenshots and store assets used in the app and Fastlane metadata. (#3)
 - Added a concrete `fdroiddata` metadata template for `org.fedisuite.mobile` plus a repository-local submission guide covering the current F-Droid merge-request workflow. (#3)
+- Added F-Droid build steps for the Expo/React-Native toolchain so the metadata now provisions `npm`, runs `npm ci` before Gradle and cleans `node_modules` through F-Droid build metadata instead of relying on a preconfigured environment. (#3)
 
 ### Fixed
 

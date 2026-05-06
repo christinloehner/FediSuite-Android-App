@@ -333,6 +333,8 @@ Vorbereitete Dateien fuer die Einreichung in das offizielle F-Droid-Repository:
 - konkrete `fdroiddata`-Vorlage: `fdroiddata/org.fedisuite.mobile.yml`
 - Ablaufbeschreibung: `docs/fdroid-submission.md`
 
+Die F-Droid-Build-Metadaten beruecksichtigen bereits, dass dieses Expo-/React-Native-Projekt auf dem Builder `npm` benoetigt und vor dem Gradle-Build ein `npm ci` im Repo-Root ausgefuehrt werden muss.
+
 ## Notes
 
 - The app is close to production shape, but parts of the backend may still evolve.

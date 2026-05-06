@@ -16,8 +16,17 @@ Builds:
     versionCode: 912
     commit: v0.9.12
     subdir: android
+    sudo:
+      - sysctl fs.inotify.max_user_watches=524288 || true
+      - apt-get update
+      - apt-get install -y npm
     gradle:
       - yes
+    prebuild:
+      - cd ..
+      - npm ci
+    scandelete:
+      - node_modules
 
 UpdateCheckMode: Static
 CurrentVersion: "0.9.12"
