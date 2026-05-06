@@ -12,7 +12,7 @@ Builds:
     sudo:
       - sysctl fs.inotify.max_user_watches=524288 || true
       - apt-get update
-      - apt-get install -y openjdk-17-jdk-headless curl xz-utils
+      - apt-get install -y openjdk-21-jdk-headless curl xz-utils
       - update-alternatives --auto java
       - update-alternatives --auto javac
       - curl -Lo node.tar.xz https://nodejs.org/dist/v20.19.4/node-v20.19.4-linux-x64.tar.xz
@@ -23,7 +23,9 @@ Builds:
       - yes
     prebuild:
       - sed -i '/org.gradle.java.home/d' gradle.properties
-      - echo "org.gradle.java.home=/usr/lib/jvm/java-17-openjdk-amd64" >> gradle.properties
+      - echo "org.gradle.java.home=/usr/lib/jvm/java-21-openjdk-amd64" >> gradle.properties
+      - sed -i '/jvmToolchain/s/17/21/g' ../node_modules/@react-native/gradle-plugin/*/build.gradle.kts
+      - sed -i 's/project.kotlinExtension.jvmToolchain(17)/project.kotlinExtension.jvmToolchain(21)/g' ../node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/JdkConfiguratorUtils.kt
       - cd ..
       - npm ci
     scandelete:
