@@ -25,7 +25,8 @@ Builds:
       - sed -i '/org.gradle.java.home/d' ../gradle.properties
       - cd ../..
       - npm ci
-      - sed -i '/jvmToolchain/s/17/21/g' node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
+      - sed -i '/jvmToolchain/s/17/21/g' 
+        node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/build.gradle.kts
       - sed -i '/jvmToolchain/s/17/21/g' node_modules/@react-native/gradle-plugin/settings-plugin/build.gradle.kts
       - sed -i '/jvmToolchain/s/17/21/g' node_modules/@react-native/gradle-plugin/shared/build.gradle.kts
       - sed -i '/jvmToolchain/s/17/21/g' node_modules/@react-native/gradle-plugin/shared-testutil/build.gradle.kts
