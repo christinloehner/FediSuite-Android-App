@@ -1,26 +1,49 @@
 Categories:
-  - Internet
+  - Social Network
 License: GPL-3.0-only
+AuthorName: Christin Löhner
+AuthorWebSite: https://www.fedisuite.com
+WebSite: https://www.fedisuite.com
 SourceCode: https://github.com/christinloehner/FediSuite-Android-App
 IssueTracker: https://github.com/christinloehner/FediSuite-Android-App/issues
+Changelog: https://github.com/christinloehner/FediSuite-Android-App/blob/main/CHANGELOG.md
+
+AutoName: FediSuite
+
+RepoType: git
+Repo: https://github.com/christinloehner/FediSuite-Android-App.git
 
 Builds:
-  - versionName: "0.9.13"
+  - versionName: 0.9.13
     versionCode: 913
-    commit: v0.9.13
-    subdir: android
+    commit: 2de9c84b604f0fbf2b5255087e8dadd875176565
+    subdir: android/app
     sudo:
-      - sysctl fs.inotify.max_user_watches=524288 || true
+      - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
       - apt-get update
-      - apt-get install -y npm
+      - apt-get install -y -t forky npm
     gradle:
       - yes
     prebuild:
-      - cd ..
-      - npm ci
+      - sed -i '/org.gradle.java.home/d' ../gradle.properties
+      - cd ../..
+      - sed -i -e '1a "expo":{"autolinking":{"android":{"buildFromSource":[".*"]}}},'
+        package.json
+      - npm install
+      - sed -i -e '/JavaVersion\|jvmToolchain/s/17/21/' node_modules/@react-native/gradle-plugin/*/build.gradle.kts
+        node_modules/@react-native/gradle-plugin/react-native-gradle-plugin/src/main/kotlin/com/facebook/react/utils/JdkConfiguratorUtils.kt
+      - npx expo prebuild --platform android --clean
+      - sed -i -e '/signingConfig /d' android/app/build.gradle
+    scanignore:
+      - node_modules/hermes-compiler/hermesc/linux64-bin/hermesc
+      - node_modules/expo-modules-core/android/ExpoModulesCorePlugin.gradle
+      - node_modules/@react-native-async-storage/async-storage/android/build.gradle
+      - node_modules/react-native-safe-area-context/android/build.gradle
+      - node_modules/react-native-screens/android/build.gradle
     scandelete:
       - node_modules
 
-UpdateCheckMode: Static
-CurrentVersion: "0.9.13"
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 0.9.13
 CurrentVersionCode: 913
