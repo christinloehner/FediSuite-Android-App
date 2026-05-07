@@ -8,6 +8,8 @@ SourceCode: https://github.com/christinloehner/FediSuite-Android-App
 IssueTracker: https://github.com/christinloehner/FediSuite-Android-App/issues
 Changelog: https://github.com/christinloehner/FediSuite-Android-App/blob/main/CHANGELOG.md
 
+AutoName: FediSuite
+
 RepoType: git
 Repo: https://github.com/christinloehner/FediSuite-Android-App.git
 
