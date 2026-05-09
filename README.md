@@ -1,5 +1,12 @@
 # FediSuite Android App
 
+> [!IMPORTANT]
+> This repository has moved to Codeberg: <https://codeberg.org/christinloehner/FediSuite-Android-App>
+>
+> The GitHub repository will be archived in the near future. Please use the new Codeberg repository for all future clones, updates and references.
+>
+> Reason for the move: FediSuite is intentionally moving away from dependence on large US technology corporations and US-hosted infrastructure. GitHub is owned by Microsoft and operates on US infrastructure, which raises legitimate digital-sovereignty and privacy concerns in light of laws such as the US CLOUD Act. Codeberg is operated by a German non-profit organization and is a much better fit for a project that values self-hosting, independence and European infrastructure.
+
 Mobile client for **FediSuite**, the Fediverse management platform.
 
 FediSuite helps users manage multiple Fediverse accounts in one place, including:
@@ -321,9 +328,9 @@ This keeps release tags, Fastlane changelogs and Android upgrade paths aligned.
 
 - Website: [https://www.fedisuite.com](https://www.fedisuite.com)
 - Hosted app instance: [https://app.fedisuite.com](https://app.fedisuite.com)
-- Android app repository: [https://github.com/christinloehner/FediSuite-Android-App](https://github.com/christinloehner/FediSuite-Android-App)
-- Self-hosting repository: [https://github.com/christinloehner/FediSuite](https://github.com/christinloehner/FediSuite)
-- Main source/build repository for the full application stack: [https://github.com/christinloehner/FediSuite-Docker-Image](https://github.com/christinloehner/FediSuite-Docker-Image)
+- Android app repository: [https://codeberg.org/christinloehner/FediSuite-Android-App](https://codeberg.org/christinloehner/FediSuite-Android-App)
+- Self-hosting repository: [https://codeberg.org/christinloehner/FediSuite](https://codeberg.org/christinloehner/FediSuite)
+- Main source/build repository for the full application stack: [https://codeberg.org/christinloehner/FediSuite-Docker-Image](https://codeberg.org/christinloehner/FediSuite-Docker-Image)
 
 ## F-Droid
 
